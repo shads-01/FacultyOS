@@ -1,0 +1,5 @@
+{
+  "rubric": "Award full credit for a correct time complexity with justification; half credit for a correct answer with no justification.",
+  "studentAnswers": "1. O(log n), because binary search halves the remaining input each step.\n2. O(n), scans every element once.\n3. Logarithmic time, since the search space is cut in half repeatedly.",
+  "graderScores": "Alex,1,10\nAlex,2,5\nAlex,3,6\nJordan,1,10\nJordan,2,5\nJordan,3,9"
+}
