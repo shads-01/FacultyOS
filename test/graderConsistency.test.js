@@ -40,3 +40,12 @@ test('parseConsistencyJSON parses flags', () => {
 test('parseConsistencyJSON throws on missing flags array', () => {
   assert.throws(() => parseConsistencyJSON('{"foo":1}'), /missing "flags" array/);
 });
+
+test('parseGraderScores skips gracefully on a line with a non-numeric score', () => {
+  const result = parseGraderScores('Alex,1,eight');
+  assert.strictEqual(Number.isNaN(result[0].score), true);
+});
+
+test('parseNumberedAnswers returns an empty array for blank input', () => {
+  assert.deepStrictEqual(parseNumberedAnswers(''), []);
+});

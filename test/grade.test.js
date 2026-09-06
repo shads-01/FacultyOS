@@ -55,3 +55,13 @@ test('parseGradeJSON sets delta to null when there is no human score', () => {
 test('parseGradeJSON throws on missing results array', () => {
   assert.throws(() => parseGradeJSON('{"foo":1}'), /missing "results" array/);
 });
+
+test('parseHumanScores ignores blank lines', () => {
+  const result = parseHumanScores('1,8\n\n2,6\n');
+  assert.strictEqual(result.size, 2);
+});
+
+test('parseGradeJSON handles a result with an explicit null humanScore', () => {
+  const result = parseGradeJSON('{"results":[{"answer":"A1","humanScore":null,"aiScore":7,"reason":"r"}]}');
+  assert.strictEqual(result.results[0].delta, null);
+});
