@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- CJS-compatible for node:test, bundled by Next */
 const mockResponses = require('../components/mockResponses');
 
 const MOCKS = {

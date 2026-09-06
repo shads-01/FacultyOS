@@ -2,14 +2,14 @@
 import { useEffect, useRef, useState } from 'react';
 
 export default function IdentityChip() {
-  const [name, setName] = useState(null);
+  // ponytail: localStorage read in the initializer is the whole feature —
+  // suppressHydrationWarning covers the SSR text mismatch on first paint.
+  const [name, setName] = useState(() =>
+    typeof window !== 'undefined' ? localStorage.getItem('fz-identity') : null
+  );
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const inputRef = useRef(null);
-
-  useEffect(() => {
-    setName(localStorage.getItem('fz-identity'));
-  }, []);
 
   useEffect(() => {
     if (editing && inputRef.current) inputRef.current.focus();
@@ -18,6 +18,7 @@ export default function IdentityChip() {
   function save() {
     const clean = draft.trim();
     if (clean) localStorage.setItem('fz-identity', clean);
+    else localStorage.removeItem('fz-identity');
     setName(clean || null);
     setEditing(false);
     setDraft('');
@@ -47,6 +48,7 @@ export default function IdentityChip() {
 
   return (
     <button
+      suppressHydrationWarning
       onClick={() => { setDraft(name || ''); setEditing(true); }}
       aria-label="Set your grader identity"
       className="cursor-pointer"

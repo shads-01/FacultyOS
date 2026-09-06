@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { runsResponse } from '@/components/mockResponses';
 
 const STAGES = [
@@ -31,11 +31,8 @@ const STAGES = [
 ];
 
 export default function DashboardPage() {
-  const [runs, setRuns] = useState([]);
-  useEffect(() => {
-    // TODO(integration): GET /api/runs with Bearer token in live mode.
-    setRuns(runsResponse.runs);
-  }, []);
+  // TODO(integration): fetch GET /api/runs with Bearer token in live mode.
+  const [runs] = useState(runsResponse.runs);
 
   return (
     <div className="mx-auto" style={{ maxWidth: 1160 }}>
