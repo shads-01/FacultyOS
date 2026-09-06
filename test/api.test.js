@@ -20,9 +20,6 @@ test('POST /api/analyze returns 500 if GEMINI_API_KEY is not configured', async 
   const originalKey = process.env.GEMINI_API_KEY;
   delete process.env.GEMINI_API_KEY;
 
-  // Mock requireUser by monkey patching or passing a valid auth header
-  // If requireUser fails with invalid session, it returns 401.
-  // Here we test with missing auth vs missing env
   const req = new Request('http://localhost:3000/api/analyze', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -34,4 +31,3 @@ test('POST /api/analyze returns 500 if GEMINI_API_KEY is not configured', async 
 
   if (originalKey) process.env.GEMINI_API_KEY = originalKey;
 });
-

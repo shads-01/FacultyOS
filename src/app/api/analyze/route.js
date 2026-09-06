@@ -7,7 +7,17 @@ export async function POST(req) {
     return Response.json({ error: authError }, { status: 401 });
   }
 
-  const { clos = '', exam = '', pastExams = '' } = await req.json();
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const clos = body?.clos ?? body?.closText ?? '';
+  const exam = body?.exam ?? body?.questionsText ?? body?.examText ?? '';
+  const pastExams = body?.pastExams ?? body?.pastExamsText ?? '';
+
   if (!clos.trim() || !exam.trim()) {
     return Response.json({ error: 'CLOs and exam text are required' }, { status: 400 });
   }
