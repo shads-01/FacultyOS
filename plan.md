@@ -3,8 +3,10 @@
 ## One-liner
 Faculty paste Course Learning Outcomes + a draft exam + past exams (plus, on three extra screens, rubrics/syllabi/answers) and get back an AI report: untested outcomes, recycled questions, syllabus overlap, and grading-consistency flags. Competitor recon → [docs/competitor-recon.md](docs/competitor-recon.md).
 
-## Auth decision (resolves a contradiction in the prior draft — flagging this, override if wrong)
-**Anonymous Supabase auth, no login/signup screens.** `supabase.auth.signInAnonymously()` fires once on page load; every run is saved under that anonymous `auth.uid()`. A real email/password flow was speced earlier but never built and costs time we don't have in 4.5h — dropped in favor of what `TEAM_PROMPTS.md` already assumed.
+## Auth decision (reversed 2026-09-06 — restoring real auth, overriding the anonymous-auth draft below)
+**Real Supabase email+password auth**, via `@supabase/ssr` — login/signup screens, cookie-based session, `middleware.js` redirecting signed-out visitors to `/login`. This restores `Backend_Plan.md`'s original design, which is no longer superseded — see that file for the concrete implementation (SSR clients, middleware, login/signup pages, `getServerSupabase()`-based route handlers instead of bearer-token verification). Every run is saved under the signed-in faculty member's real `auth.uid()`.
+
+~~Anonymous Supabase auth, no login/signup screens.~~ ~~`supabase.auth.signInAnonymously()` fires once on page load; every run is saved under that anonymous `auth.uid()`. A real email/password flow was speced earlier but never built and costs time we don't have in 4.5h — dropped in favor of what `TEAM_PROMPTS.md` already assumed.~~ *(superseded by the decision above — kept struck through, not deleted, so the history of the flip-flop is visible rather than silently rewritten.)*
 
 ## User Flow
 0. App loads → silent `signInAnonymously()` (no visible auth UI). Faculty lands on a 4-screen nav — none is the "main" screen, each is a full feature:
@@ -34,8 +36,8 @@ RLS: `own_rows_only` — `using (auth.uid() = user_id)` for `select`/`insert`. N
 **Routes:**
 | Route | Auth | Request | Response |
 |---|---|---|---|
-| `POST /api/analyze` | Bearer anon token | `{clos, exam, pastExams}` (strings) | `{clos: CLO[], questions: Question[], analysis: QuestionAnalysis[]}`; saves the run as a side effect |
-| `GET /api/runs` | Bearer anon token | — | `{runs: {id, created_at, result}[]}` |
+| `POST /api/analyze` | Signed-in session (cookie, via `@supabase/ssr`) | `{clos, exam, pastExams}` (strings) | `{clos: CLO[], questions: Question[], analysis: QuestionAnalysis[]}`; saves the run as a side effect |
+| `GET /api/runs` | Signed-in session (cookie, via `@supabase/ssr`) | — | `{runs: {id, created_at, result}[]}` |
 | `POST /api/overlap` | none | `{proposedSyllabus, existingSyllabi}` | `{overlaps: OverlapItem[], gaps: string[]}` |
 | `POST /api/grader-consistency` | none | `{rubric, studentAnswers, graderScores}` | `{flags: ConsistencyFlag[]}` |
 | `POST /api/grade` | none | `{rubric, modelAnswer, studentAnswers, humanScores?}` | `{results: GradeResult[]}` |
