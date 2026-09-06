@@ -3,6 +3,8 @@
 > **What this file is:** a companion reference, not a replacement. `plan.md` and `DESIGN.md` at the project root are still the spec; `2026-09-06-faculty-os-arko.md` / `-shads.md` / `-hrittika.md` are still the step-by-step TDD plans each person executes. This file adds the three things those docs don't have in one place: (1) the whole app's tech stack on one page, (2) a concrete **Gemini API** migration plan — every existing doc still calls Anthropic/Claude — and (3) a full task list tagged by which teammate owns it.
 >
 > **Team decision (2026-09-06):** replace Anthropic entirely with Gemini. One provider, everywhere — consistent with `plan.md`'s "exactly one LLM call per request" constraint. Team split stays the 3-person real-name split from `plan.md`: **Arko** (backend core), **Shads** (frontend, all 4 screens), **Hrittika** (3 secondary routes + fixtures + QA).
+>
+> **Auth note (2026-09-06, later same day):** the "anonymous Auth" row and "Bearer-token auth helper" task below are stale — `plan.md`'s Auth decision reversed back to real email+password auth (see `context.md`'s "Auth" section). `Arko_Plan.md` Tasks 1/4/5/6/7 carry the corrected version; treat this file's tech-stack row and Task 4 line below as historical, not executable.
 
 ---
 

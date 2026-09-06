@@ -492,9 +492,16 @@ This task is thin glue over `@supabase/ssr` (session cookie handling, auth redir
 
 - [ ] **Step 1: Install the Supabase SSR client**
 
+- Produces: `getBrowserSupabase() -> SupabaseClient` (browser, cookie-aware), `getServerSupabase() -> Promise<SupabaseClient>` (server, reads/writes cookies via `next/headers`) — consumed by Task 5/6's route handlers.
+
+This task is thin glue over `@supabase/ssr` (session cookie handling, auth redirects, two plain HTML forms) — no pure logic to TDD here, same reasoning `Backend_Plan.md` gives for its equivalent task. Verified manually in Task 7, not unit tested.
+
+- [ ] **Step 1: Install the Supabase SSR client**
+
 ```bash
 npm install @supabase/ssr
 ```
+(`@supabase/supabase-js` is already a dependency.) `ponytail:` `@supabase/ssr` is the one dependency worth adding here — hand-rolling cookie-based session refresh for the App Router would be far more code, and far easier to get wrong on a trust boundary, than using Supabase's own SSR helper.
 
 (`@supabase/supabase-js` is already a dependency.) `ponytail:` `@supabase/ssr` is the one dependency worth adding here — hand-rolling cookie-based session refresh for the App Router would be far more code, and far easier to get wrong on a trust boundary, than using Supabase's own SSR helper.
 
@@ -504,6 +511,12 @@ npm install @supabase/ssr
 
 ```js
 import { createBrowserClient } from "@supabase/ssr";
+
+- [ ] **Step 2: Browser client**
+
+`lib/supabase/client.js`:
+```js
+import { createBrowserClient } from '@supabase/ssr';
 
 export function getBrowserSupabase() {
   return createBrowserClient(
@@ -520,6 +533,9 @@ export function getBrowserSupabase() {
 ```js
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+```js
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function getServerSupabase() {
   const cookieStore = await cookies();
@@ -536,6 +552,7 @@ export async function getServerSupabase() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options),
             );
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
           } catch {
             // called from a Server Component render path — middleware.js refreshes the session instead
           }
@@ -553,6 +570,9 @@ export async function getServerSupabase() {
 ```js
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
+```js
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse } from 'next/server';
 
 export async function middleware(request) {
   let response = NextResponse.next({ request });
@@ -588,11 +608,26 @@ export async function middleware(request) {
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        },
+      },
+    },
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup');
+  if (!user && !isAuthRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
     return NextResponse.redirect(url);
   }
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
+    url.pathname = '/';
     return NextResponse.redirect(url);
   }
 
@@ -601,6 +636,7 @@ export async function middleware(request) {
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/).*)'],
 };
 ```
 
@@ -618,6 +654,16 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+```jsx
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getBrowserSupabase } from '../../../../lib/supabase/client';
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const router = useRouter();
 
   async function handleSubmit(e) {
@@ -628,11 +674,15 @@ export default function LoginPage() {
       email,
       password,
     });
+    setError('');
+    const supabase = getBrowserSupabase();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError(error.message);
       return;
     }
     router.push("/");
+    router.push('/');
     router.refresh();
   }
 
@@ -657,6 +707,8 @@ export default function LoginPage() {
           required
         />
       </label>
+      <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+      <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
       {error && <p role="alert">{error}</p>}
       <button type="submit">Log in</button>
       <a href="/signup">Need an account? Sign up</a>
@@ -679,11 +731,22 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+```jsx
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getBrowserSupabase } from '../../../../lib/supabase/client';
+
+export default function SignupPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const router = useRouter();
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setError('');
     const supabase = getBrowserSupabase();
     const { error } = await supabase.auth.signUp({ email, password });
     if (error) {
@@ -691,6 +754,7 @@ export default function SignupPage() {
       return;
     }
     router.push("/");
+    router.push('/');
     router.refresh();
   }
 
@@ -716,6 +780,8 @@ export default function SignupPage() {
           required
         />
       </label>
+      <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+      <label>Password<input type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
       {error && <p role="alert">{error}</p>}
       <button type="submit">Sign up</button>
       <a href="/login">Already have an account? Log in</a>
@@ -745,6 +811,9 @@ git commit -m "feat: real faculty auth (Supabase SSR, email+password, login/sign
 
 **Interfaces:**
 
+- Create: `src/app/api/analyze/route.js`
+
+**Interfaces:**
 - Consumes: `lib/analyze.js` (Tasks 2-3), `lib/supabase/server.js` (Task 4).
 - Produces: `POST /api/analyze` — no header needed, session read from cookies automatically, body `{clos, exam, pastExams}` (strings), response `{clos, questions, analysis}` on 200, `{error}` on 4xx/5xx. Saves the run as a side effect. Matches `plan.md`'s Frozen Contract.
 
@@ -769,6 +838,15 @@ export async function POST(req) {
   } = await supabase.auth.getUser();
   if (!user) {
     return Response.json({ error: "Not signed in" }, { status: 401 });
+```js
+import { parseCLOs, parseNumberedQuestions, parsePastExams, buildPrompt, parseModelJSON } from '../../../../lib/analyze';
+import { getServerSupabase } from '../../../../lib/supabase/server';
+
+export async function POST(req) {
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return Response.json({ error: 'Not signed in' }, { status: 401 });
   }
 
   const { clos = "", exam = "", pastExams = "" } = await req.json();
@@ -888,6 +966,9 @@ git commit -m "feat: add POST /api/analyze route handler"
 
 **Interfaces:**
 
+- Create: `src/app/api/runs/route.js`
+
+**Interfaces:**
 - Consumes: `lib/supabase/server.js` (Task 4).
 - Produces: `GET /api/runs` — no header needed, session read from cookies, response `{runs: {id, created_at, result}[]}`, RLS-scoped to the caller's own rows.
 
@@ -905,6 +986,14 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) {
     return Response.json({ error: "Not signed in" }, { status: 401 });
+```js
+import { getServerSupabase } from '../../../../lib/supabase/server';
+
+export async function GET() {
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return Response.json({ error: 'Not signed in' }, { status: 401 });
   }
 
   // ponytail: no explicit .eq('user_id', user.id) filter here — RLS (auth.uid() = user_id)
@@ -955,6 +1044,23 @@ npx vercel --prod --yes
 
 CLOs:
 
+- Consumes: the full backend (Tasks 0-6), deployed. Self-contained — does not require Shads' UI or Hrittika's routes to exist, beyond using the browser to reach `/login`.
+
+`ponytail:` real cookie-based sessions behind `src/middleware.js` are awkward to script with bare `fetch`/`curl` (cookie jar + Next's specific cookie names) for marginal benefit over just using the browser — the anonymous-auth version of this plan used a scripted smoke test with `signInAnonymously()`; that no longer applies now that signing in requires a real account. Verified manually instead, same as `Backend_Plan.md`'s equivalent step.
+
+- [ ] **Step 1: Redeploy**
+
+```bash
+npx vercel --prod --yes
+```
+
+- [ ] **Step 2: Manual end-to-end check against the deployed URL**
+
+1. Open the deployed URL in an incognito window → confirm it redirects to `/login`.
+2. Click through to `/signup`, create a test faculty account (e.g. `demo1@test.edu` / a 6+ char password) → confirm it redirects to `/` signed in (no email-confirmation wait, since Task 4 Step 7 disabled that).
+3. Paste this exact demo data (engineered to trigger both wow-moment flags) and click Analyze:
+
+CLOs:
 ```
 CLO1: Explain Big-O time complexity
 CLO2: Implement recursive algorithms
@@ -972,6 +1078,14 @@ Draft Exam (this year):
 
 Past Exams:
 
+```
+```
+1. What is the time complexity of binary search, and why?
+2. Write a recursive function to compute the nth Fibonacci number.
+3. Compare the average-case and worst-case time complexity of quicksort vs mergesort.
+```
+
+Past Exams:
 ```
 2024
 1. Write a recursive function that returns the nth Fibonacci number using memoization.
