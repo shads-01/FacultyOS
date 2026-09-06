@@ -17,7 +17,17 @@ async function extractTextLayer(pdf) {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    text += content.items.map((item) => item.str).join(' ') + '\n';
+    let pageText = '';
+    for (let j = 0; j < content.items.length; j++) {
+      const item = content.items[j];
+      pageText += item.str;
+      if (item.hasEOL) {
+        pageText += '\n';
+      } else if (j < content.items.length - 1) {
+        pageText += ' ';
+      }
+    }
+    text += pageText.trimEnd() + '\n';
   }
   return text;
 }
