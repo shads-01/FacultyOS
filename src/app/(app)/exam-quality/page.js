@@ -6,6 +6,7 @@ import { runFeature } from '@/lib/api';
 import { demoInputs } from '@/components/mockResponses';
 import ExamQualityReport from '@/components/ExamQualityReport';
 import Wizard from '@/components/Wizard';
+import PdfOrPasteField from '@/components/PdfOrPasteField';
 
 export default function ExamQualityPage() {
   const [step, setStep] = useState(0);
@@ -51,24 +52,30 @@ export default function ExamQualityPage() {
       title: 'PASTE',
       content: (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
-          <div>
-            <label className="fz-label" htmlFor="fz-clos">Course Learning Outcomes</label>
-            <textarea id="fz-clos" className="fz-textarea" value={clos} onChange={(e) => setClos(e.target.value)}
-              placeholder={'CLO1: Explain time complexity\nCLO2: Implement recursive algorithms'} />
-            <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>one per line · CLOn: prefix optional</p>
-          </div>
-          <div>
-            <label className="fz-label" htmlFor="fz-exam">Draft Exam (this year)</label>
-            <textarea id="fz-exam" className="fz-textarea" value={exam} onChange={(e) => setExam(e.target.value)}
-              placeholder={'1. Question text...\n2. Question text...'} />
-            <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>one numbered question per line</p>
-          </div>
-          <div>
-            <label className="fz-label" htmlFor="fz-past">Past Exams</label>
-            <textarea id="fz-past" className="fz-textarea" value={pastExams} onChange={(e) => setPastExams(e.target.value)}
-              placeholder={'2024\n1. Question...\n\n2022\n1. Question...'} />
-            <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>bare 4-digit year starts a new year block</p>
-          </div>
+          <PdfOrPasteField
+            id="fz-clos"
+            label="Course Learning Outcomes"
+            value={clos}
+            onChange={setClos}
+            placeholder={'CLO1: Explain time complexity\nCLO2: Implement recursive algorithms'}
+            hint="one per line · CLOn: prefix optional · PDF OCR reads first 20 pages of scans"
+          />
+          <PdfOrPasteField
+            id="fz-exam"
+            label="Draft Exam (this year)"
+            value={exam}
+            onChange={setExam}
+            placeholder={'1. Question text...\n2. Question text...'}
+            hint="one numbered question per line · PDF OCR reads first 20 pages of scans"
+          />
+          <PdfOrPasteField
+            id="fz-past"
+            label="Past Exams"
+            value={pastExams}
+            onChange={setPastExams}
+            placeholder={'2024\n1. Question...\n\n2022\n1. Question...'}
+            hint="bare 4-digit year starts a new year block · PDF OCR reads first 20 pages of scans"
+          />
         </div>
       ),
     },
@@ -112,10 +119,15 @@ export default function ExamQualityPage() {
       </p>
 
       <div style={{ marginBottom: 14 }}>
-        <button className="fz-btn" style={{ fontSize: 11, padding: '10px 16px', boxShadow: '3px 3px 0 #111', background: '#FAF8F3' }}
-          onClick={() => { setClos(demoInputs.examQuality.clos); setExam(demoInputs.examQuality.exam); setPastExams(demoInputs.examQuality.pastExams); }}>
-          Load example
-        </button>
+        <select className="fz-btn" style={{ fontSize: 11, padding: '10px 16px', boxShadow: '3px 3px 0 #111', background: '#FAF8F3' }}
+          value="" onChange={(e) => {
+            const scenario = demoInputs.examQuality.find((s) => s.key === e.target.value);
+            if (!scenario) return;
+            setClos(scenario.data.clos); setExam(scenario.data.exam); setPastExams(scenario.data.pastExams);
+          }}>
+          <option value="">Load data…</option>
+          {demoInputs.examQuality.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+        </select>
       </div>
 
       {error && <div className="fz-strip" style={{ marginBottom: 14 }}>{error}</div>}
