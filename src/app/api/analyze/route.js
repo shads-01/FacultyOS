@@ -1,5 +1,11 @@
-import { parseCLOs, parseNumberedQuestions, parsePastExams, buildPrompt, parseModelJSON } from '../../../../lib/analyze.js';
-import { requireUser } from '../../../../lib/supabase/serverClient.js';
+import {
+  parseCLOs,
+  parseNumberedQuestions,
+  parsePastExams,
+  buildPrompt,
+  parseModelJSON,
+} from '../../../../lib/analyze.js';
+import { getServerSupabase } from '../../../../lib/supabase/server.js';
 
 async function callModelWithRetry(prompt, apiKey, maxRetries = 2) {
   let lastError = null;
@@ -27,7 +33,7 @@ async function callModelWithRetry(prompt, apiKey, maxRetries = 2) {
       }
 
       const errText = await geminiRes.text();
-      // Retry ONLY on 5xx server errors (not on 4xx client errors)
+      // Retry ONLY on 5xx server errors
       if (geminiRes.status >= 500 && attempt < maxRetries) {
         await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 500 : 1000));
         continue;
@@ -42,13 +48,20 @@ async function callModelWithRetry(prompt, apiKey, maxRetries = 2) {
       }
     }
   }
-  return { rawText: null, error: `Gemini API request failed: ${lastError?.message || 'Unknown network error'}`, status: 502 };
+  return {
+    rawText: null,
+    error: `Gemini API request failed: ${lastError?.message || 'Unknown network error'}`,
+    status: 502,
+  };
 }
 
 export async function POST(req) {
-  const { user, supabase, error: authError } = await requireUser(req);
+  const supabase = await getServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
-    return Response.json({ error: authError }, { status: 401 });
+    return Response.json({ error: 'Not signed in' }, { status: 401 });
   }
 
   let body;
@@ -90,12 +103,22 @@ export async function POST(req) {
 
   const result = { clos: parsedClos, questions: parsedQuestions, analysis: parsed.questions };
 
-  const { error: insertError } = await supabase
-    .from('analysis_runs')
-    .insert({ user_id: user.id, clos_text: clos, exam_text: exam, past_exams_text: pastExams, result });
+  const { error: insertError } = await supabase.from('analysis_runs').insert({
+    user_id: user.id,
+    clos_text: clos,
+    exam_text: exam,
+    past_exams_text: pastExams,
+    result,
+  });
 
   if (insertError) {
-    return Response.json({ ...result, warning: `Saved result but failed to persist run: ${insertError.message}` }, { status: 200 });
+    return Response.json(
+      {
+        ...result,
+        warning: `Saved result but failed to persist run: ${insertError.message}`,
+      },
+      { status: 200 },
+    );
   }
 
   return Response.json(result);
