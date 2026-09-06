@@ -6,6 +6,7 @@ import { runFeature } from '@/lib/api';
 import { demoInputs } from '@/components/mockResponses';
 import GraderConsistencyTable from '@/components/GraderConsistencyTable';
 import NextActions from '@/components/NextActions';
+import PdfOrPasteField from '@/components/PdfOrPasteField';
 
 export default function GraderConsistencyPage() {
   const [rubric, setRubric] = useState('');
@@ -37,56 +38,51 @@ export default function GraderConsistencyPage() {
       </p>
 
       <div style={{ marginBottom: 14 }}>
-        <button
+        <select
           className="fz-btn"
           style={{ fontSize: 11, padding: '10px 16px', boxShadow: '3px 3px 0 #111', background: '#FAF8F3' }}
-          onClick={() => {
-            setRubric(demoInputs.consistency.rubric);
-            setStudentAnswers(demoInputs.consistency.studentAnswers);
-            setGraderScores(demoInputs.consistency.graderScores);
+          value=""
+          onChange={(e) => {
+            const scenario = demoInputs.consistency.find((s) => s.key === e.target.value);
+            if (!scenario) return;
+            setRubric(scenario.data.rubric);
+            setStudentAnswers(scenario.data.studentAnswers);
+            setGraderScores(scenario.data.graderScores);
           }}
         >
-          Load example
-        </button>
+          <option value="">Load data…</option>
+          {demoInputs.consistency.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+        </select>
       </div>
 
       {error && <div className="fz-strip" style={{ marginBottom: 14 }}>{error}</div>}
 
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
-          <div>
-            <label className="fz-label" htmlFor="gc-rubric">Rubric</label>
-            <textarea
-              id="gc-rubric"
-              className="fz-textarea"
-              value={rubric}
-              onChange={(e) => setRubric(e.target.value)}
-              placeholder="Award full credit for..."
-            />
-            <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>free text</p>
-          </div>
-          <div>
-            <label className="fz-label" htmlFor="gc-answers">Student Answers</label>
-            <textarea
-              id="gc-answers"
-              className="fz-textarea"
-              value={studentAnswers}
-              onChange={(e) => setStudentAnswers(e.target.value)}
-              placeholder={'1. Answer text...\n2. Answer text...'}
-            />
-            <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>one numbered answer per line</p>
-          </div>
-          <div>
-            <label className="fz-label" htmlFor="gc-scores">Grader Scores</label>
-            <textarea
-              id="gc-scores"
-              className="fz-textarea"
-              value={graderScores}
-              onChange={(e) => setGraderScores(e.target.value)}
-              placeholder={'Alex,1,8\nJordan,1,6'}
-            />
-            <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>GraderName,answerNumber,score per line</p>
-          </div>
+          <PdfOrPasteField
+            id="gc-rubric"
+            label="Rubric"
+            value={rubric}
+            onChange={setRubric}
+            placeholder="Award full credit for..."
+            hint="free text · PDF OCR reads first 20 pages of scans"
+          />
+          <PdfOrPasteField
+            id="gc-answers"
+            label="Student Answers"
+            value={studentAnswers}
+            onChange={setStudentAnswers}
+            placeholder={'1. Answer text...\n2. Answer text...'}
+            hint="one numbered answer per line · PDF OCR reads first 20 pages of scans"
+          />
+          <PdfOrPasteField
+            id="gc-scores"
+            label="Grader Scores"
+            value={graderScores}
+            onChange={setGraderScores}
+            placeholder={'Alex,1,8\nJordan,1,6'}
+            hint="GraderName,answerNumber,score per line · PDF OCR reads first 20 pages of scans"
+          />
         </div>
 
         <button type="submit" className="fz-btn" style={{ marginTop: 24 }} disabled={loading}>
