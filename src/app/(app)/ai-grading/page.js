@@ -5,6 +5,7 @@ import { demoInputs } from '@/components/mockResponses';
 import GradingTable from '@/components/GradingTable';
 import NextActions from '@/components/NextActions';
 import Wizard from '@/components/Wizard';
+import PdfOrPasteField from '@/components/PdfOrPasteField';
 
 export default function AiGradingPage() {
   const [step, setStep] = useState(0);
@@ -42,30 +43,38 @@ export default function AiGradingPage() {
       title: 'PASTE',
       content: (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
-          <div>
-            <label className="fz-label" htmlFor="fz-rubric">Rubric</label>
-            <textarea id="fz-rubric" className="fz-textarea" value={rubric} onChange={(e) => setRubric(e.target.value)}
-              placeholder="Full credit for..." />
-            <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>free text</p>
-          </div>
-          <div>
-            <label className="fz-label" htmlFor="fz-model">Model Answer</label>
-            <textarea id="fz-model" className="fz-textarea" value={modelAnswer} onChange={(e) => setModelAnswer(e.target.value)}
-              placeholder="The ideal answer..." />
-            <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>free text</p>
-          </div>
-          <div>
-            <label className="fz-label" htmlFor="fz-answers">Student Answers</label>
-            <textarea id="fz-answers" className="fz-textarea" value={studentAnswers} onChange={(e) => setStudentAnswers(e.target.value)}
-              placeholder={'1. Answer...\n2. Answer...'} />
-            <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>one numbered answer per line</p>
-          </div>
-          <div>
-            <label className="fz-label" htmlFor="fz-scores">Human Scores (optional)</label>
-            <textarea id="fz-scores" className="fz-textarea" value={humanScores} onChange={(e) => setHumanScores(e.target.value)}
-              placeholder={'1,8\n2,6'} />
-            <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>answerNumber,score per line · leave blank if none</p>
-          </div>
+          <PdfOrPasteField
+            id="fz-rubric"
+            label="Rubric"
+            value={rubric}
+            onChange={setRubric}
+            placeholder="Full credit for..."
+            hint="free text · PDF OCR reads first 20 pages of scans"
+          />
+          <PdfOrPasteField
+            id="fz-model"
+            label="Model Answer"
+            value={modelAnswer}
+            onChange={setModelAnswer}
+            placeholder="The ideal answer..."
+            hint="free text · PDF OCR reads first 20 pages of scans"
+          />
+          <PdfOrPasteField
+            id="fz-answers"
+            label="Student Answers"
+            value={studentAnswers}
+            onChange={setStudentAnswers}
+            placeholder={'1. Answer...\n2. Answer...'}
+            hint="one numbered answer per line · PDF OCR reads first 20 pages of scans"
+          />
+          <PdfOrPasteField
+            id="fz-scores"
+            label="Human Scores (optional)"
+            value={humanScores}
+            onChange={setHumanScores}
+            placeholder={'1,8\n2,6'}
+            hint="answerNumber,score per line · leave blank if none · PDF OCR reads first 20 pages of scans"
+          />
         </div>
       ),
     },
@@ -107,10 +116,16 @@ export default function AiGradingPage() {
       </p>
 
       <div style={{ marginBottom: 14 }}>
-        <button className="fz-btn" style={{ fontSize: 11, padding: '10px 16px', boxShadow: '3px 3px 0 #111', background: '#FAF8F3' }}
-          onClick={() => { setRubric(demoInputs.grade.rubric); setModelAnswer(demoInputs.grade.modelAnswer); setStudentAnswers(demoInputs.grade.studentAnswers); setHumanScores(demoInputs.grade.humanScores); }}>
-          Load example
-        </button>
+        <select className="fz-btn" style={{ fontSize: 11, padding: '10px 16px', boxShadow: '3px 3px 0 #111', background: '#FAF8F3' }}
+          value="" onChange={(e) => {
+            const scenario = demoInputs.grade.find((s) => s.key === e.target.value);
+            if (!scenario) return;
+            setRubric(scenario.data.rubric); setModelAnswer(scenario.data.modelAnswer);
+            setStudentAnswers(scenario.data.studentAnswers); setHumanScores(scenario.data.humanScores);
+          }}>
+          <option value="">Load data…</option>
+          {demoInputs.grade.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+        </select>
       </div>
 
       {error && <div className="fz-strip" style={{ marginBottom: 14 }}>{error}</div>}
