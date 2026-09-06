@@ -29,7 +29,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <div className="fz-splash" aria-hidden="true">
+          <div className="fz-splash-mark">F.</div>
+          <div className="fz-splash-title">Faculty OS</div>
+          <div className="fz-splash-sub">Design the course · Build the exam · Grade fairly</div>
+        </div>
+        {children}
+      </body>
     </html>
   );
 }

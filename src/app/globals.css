@@ -236,4 +236,58 @@
   @media (prefers-reduced-motion: reduce) {
     .fz-lift, .fz-btn, .fz-table tbody tr { transition: none; }
   }
+  .fz-splash {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #FAF8F3;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
+    pointer-events: none;
+    animation: fz-splash-exit 300ms cubic-bezier(0.22, 1, 0.36, 1) 1150ms forwards;
+  }
+  .fz-splash-mark {
+    width: 84px; height: 84px;
+    background: #FFD23F; border: 5px solid #111;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Archivo Black', var(--font-display), sans-serif;
+    font-size: 40px; color: #111;
+    animation: fz-splash-stamp 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .fz-splash-mark::after {
+    content: ''; position: absolute; inset: 0;
+    background: #E11D1D; z-index: -1;
+    animation: fz-splash-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1) 240ms both;
+  }
+  .fz-splash-title {
+    font-family: 'Archivo Black', var(--font-display), sans-serif;
+    font-size: clamp(34px, 8vw, 64px);
+    text-transform: uppercase; letter-spacing: -0.02em; color: #111;
+    animation: fz-splash-title 320ms cubic-bezier(0.22, 1, 0.36, 1) 420ms both;
+  }
+  .fz-splash-sub {
+    font-family: var(--font-mono), 'JetBrains Mono', monospace;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em; color: #55524a;
+    animation: fz-splash-title 300ms ease-out 640ms both;
+  }
+  @keyframes fz-splash-stamp {
+    0% { transform: scale(0) rotate(-8deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  @keyframes fz-splash-shadow {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(10px, 10px); }
+  }
+  @keyframes fz-splash-title {
+    0% { opacity: 0; transform: translateY(16px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fz-splash-exit {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-100%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fz-splash { display: none; }
+    .fz-splash-mark, .fz-splash-mark::after, .fz-splash-title, .fz-splash-sub {
+      animation: none !important;
+    }
+  }
 }
