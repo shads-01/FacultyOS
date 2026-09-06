@@ -47,9 +47,11 @@
 ### Task 0: Shared scaffold (skip if it's already in the repo)
 
 **Files:**
+
 - Create (only if missing): `package.json`, `next.config.js`, `app/layout.js`, `app/page.js`, Tailwind + shadcn config files.
 
 **Interfaces:**
+
 - Produces: a runnable Next.js App Router project at repo root — the ground every other task (yours, Shads', Hrittika's) is built on.
 
 - [ ] **Step 1: Check whether the scaffold already exists**
@@ -83,20 +85,28 @@ If your `git push` races with someone else's identical scaffold commit, keep the
 ### Task 1: Shared types + Supabase schema + deploy skeleton
 
 **Files:**
+
 - Create: `lib/types.ts`
 - Create: `supabase/migrations/0001_init.sql`
 
 **Interfaces:**
+
 - Produces: the `CLO`, `Question`, `QuestionAnalysis`, `SimilarityMatch`, `AnalysisResult` types other tasks (yours and, informally, Shads'/Hrittika's own local copies) are built against; the `analysis_runs` table Task 5/6 read and write.
 
 - [ ] **Step 1: Write the shared types file**
 
 `lib/types.ts`:
+
 ```ts
 export type CLO = { id: string; text: string };
 export type Question = { number: number; text: string };
 export type PastExamYear = { year: string; questions: string[] };
-export type SimilarityMatch = { year: string; matchedQuestion: string; percent: number; reason: string };
+export type SimilarityMatch = {
+  year: string;
+  matchedQuestion: string;
+  percent: number;
+  reason: string;
+};
 export type QuestionAnalysis = {
   questionNumber: number;
   coveredCLOs: string[];
@@ -104,12 +114,17 @@ export type QuestionAnalysis = {
   bloom: string;
   similarity: SimilarityMatch | null;
 };
-export type AnalysisResult = { clos: CLO[]; questions: Question[]; analysis: QuestionAnalysis[] };
+export type AnalysisResult = {
+  clos: CLO[];
+  questions: Question[];
+  analysis: QuestionAnalysis[];
+};
 ```
 
 - [ ] **Step 2: Write the Supabase migration**
 
 `supabase/migrations/0001_init.sql`:
+
 ```sql
 create table if not exists analysis_runs (
   id uuid primary key default gen_random_uuid(),
@@ -164,49 +179,62 @@ git commit -m "feat: add shared types and Supabase schema/RLS, deploy skeleton"
 ### Task 2: Input parsers (CLOs, exam questions, past exams)
 
 **Files:**
+
 - Create: `lib/analyze.js`
 - Create: `test/analyze.test.js`
 
 **Interfaces:**
+
 - Produces: `parseCLOs(text) -> CLO[]`, `parseNumberedQuestions(text) -> Question[]` (note: `{number, text}`, matching the Frozen Contract — not `{id, text}`), `parsePastExams(text) -> PastExamYear[]`. Consumed by Task 3 (same file) and Task 5 (`app/api/analyze/route.js`).
 
 - [ ] **Step 1: Write the failing tests**
 
 `test/analyze.test.js`:
-```js
-const { test } = require('node:test');
-const assert = require('node:assert');
-const { parseCLOs, parseNumberedQuestions, parsePastExams } = require('../lib/analyze');
 
-test('parseCLOs extracts explicit CLO ids', () => {
-  const result = parseCLOs('CLO1: Explain time complexity\nCLO2: Implement recursion');
+```js
+const { test } = require("node:test");
+const assert = require("node:assert");
+const {
+  parseCLOs,
+  parseNumberedQuestions,
+  parsePastExams,
+} = require("../lib/analyze");
+
+test("parseCLOs extracts explicit CLO ids", () => {
+  const result = parseCLOs(
+    "CLO1: Explain time complexity\nCLO2: Implement recursion",
+  );
   assert.deepStrictEqual(result, [
-    { id: 'CLO1', text: 'Explain time complexity' },
-    { id: 'CLO2', text: 'Implement recursion' },
+    { id: "CLO1", text: "Explain time complexity" },
+    { id: "CLO2", text: "Implement recursion" },
   ]);
 });
 
-test('parseCLOs auto-numbers lines with no CLO prefix', () => {
-  const result = parseCLOs('Explain time complexity\nImplement recursion');
+test("parseCLOs auto-numbers lines with no CLO prefix", () => {
+  const result = parseCLOs("Explain time complexity\nImplement recursion");
   assert.deepStrictEqual(result, [
-    { id: 'CLO1', text: 'Explain time complexity' },
-    { id: 'CLO2', text: 'Implement recursion' },
+    { id: "CLO1", text: "Explain time complexity" },
+    { id: "CLO2", text: "Implement recursion" },
   ]);
 });
 
 test('parseNumberedQuestions strips numbering and uses "number" as the key', () => {
-  const result = parseNumberedQuestions('1. What is Big-O?\n2) Define recursion');
+  const result = parseNumberedQuestions(
+    "1. What is Big-O?\n2) Define recursion",
+  );
   assert.deepStrictEqual(result, [
-    { number: 1, text: 'What is Big-O?' },
-    { number: 2, text: 'Define recursion' },
+    { number: 1, text: "What is Big-O?" },
+    { number: 2, text: "Define recursion" },
   ]);
 });
 
-test('parsePastExams groups questions under year headers', () => {
-  const result = parsePastExams('2024\n1. Old question A\n2. Old question B\n\n2022\n1. Older question');
+test("parsePastExams groups questions under year headers", () => {
+  const result = parsePastExams(
+    "2024\n1. Old question A\n2. Old question B\n\n2022\n1. Older question",
+  );
   assert.deepStrictEqual(result, [
-    { year: '2024', questions: ['Old question A', 'Old question B'] },
-    { year: '2022', questions: ['Older question'] },
+    { year: "2024", questions: ["Old question A", "Old question B"] },
+    { year: "2022", questions: ["Older question"] },
   ]);
 });
 ```
@@ -219,23 +247,24 @@ Expected: FAIL — `Cannot find module '../lib/analyze'`
 - [ ] **Step 3: Write the minimal implementation**
 
 `lib/analyze.js`:
+
 ```js
 function parseCLOs(text) {
   return text
-    .split('\n')
+    .split("\n")
     .map((l) => l.trim())
     .filter(Boolean)
     .map((line, i) => {
       const m = line.match(/^(CLO\s*\d+)\s*[:\-]\s*(.+)$/i);
       return m
-        ? { id: m[1].replace(/\s+/g, '').toUpperCase(), text: m[2] }
+        ? { id: m[1].replace(/\s+/g, "").toUpperCase(), text: m[2] }
         : { id: `CLO${i + 1}`, text: line };
     });
 }
 
 function parseNumberedQuestions(text) {
   return text
-    .split('\n')
+    .split("\n")
     .map((l) => l.trim())
     .filter(Boolean)
     .map((line, i) => {
@@ -245,7 +274,7 @@ function parseNumberedQuestions(text) {
 }
 
 function parsePastExams(text) {
-  const lines = text.split('\n').map((l) => l.trim());
+  const lines = text.split("\n").map((l) => l.trim());
   const years = [];
   let current = null;
   for (const line of lines) {
@@ -282,24 +311,29 @@ git commit -m "feat: add CLO/question/past-exam parsers"
 ### Task 3: Prompt builder + model-response parser
 
 **Files:**
+
 - Modify: `lib/analyze.js`
 - Modify: `test/analyze.test.js`
 
 **Interfaces:**
+
 - Consumes: the three parse functions from Task 2 (same file).
 - Produces: `buildPrompt({clos, questions, pastExams}) -> string`, `parseModelJSON(rawText) -> {questions: QuestionAnalysis[]}`. Consumed by Task 5.
 
 - [ ] **Step 1: Append the failing tests**
 
 Append to `test/analyze.test.js`:
-```js
-const { buildPrompt, parseModelJSON } = require('../lib/analyze');
 
-test('buildPrompt embeds CLOs, questions (by number), and past exams', () => {
+````js
+const { buildPrompt, parseModelJSON } = require("../lib/analyze");
+
+test("buildPrompt embeds CLOs, questions (by number), and past exams", () => {
   const prompt = buildPrompt({
-    clos: [{ id: 'CLO1', text: 'Explain recursion' }],
-    questions: [{ number: 1, text: 'Define recursion' }],
-    pastExams: [{ year: '2024', questions: ['Define recursion in your own words'] }],
+    clos: [{ id: "CLO1", text: "Explain recursion" }],
+    questions: [{ number: 1, text: "Define recursion" }],
+    pastExams: [
+      { year: "2024", questions: ["Define recursion in your own words"] },
+    ],
   });
   assert.match(prompt, /CLO1: Explain recursion/);
   assert.match(prompt, /Q1: Define recursion/);
@@ -307,33 +341,37 @@ test('buildPrompt embeds CLOs, questions (by number), and past exams', () => {
   assert.match(prompt, /Respond with ONLY valid JSON/);
 });
 
-test('buildPrompt handles no past exams', () => {
+test("buildPrompt handles no past exams", () => {
   const prompt = buildPrompt({ clos: [], questions: [], pastExams: [] });
   assert.match(prompt, /\(none provided\)/);
 });
 
-test('parseModelJSON parses raw JSON using questionNumber/coveredCLOs keys', () => {
-  const result = parseModelJSON('{"questions":[{"questionNumber":1,"coveredCLOs":["CLO1"],"bloom":"Apply","topic":"Recursion"}]}');
+test("parseModelJSON parses raw JSON using questionNumber/coveredCLOs keys", () => {
+  const result = parseModelJSON(
+    '{"questions":[{"questionNumber":1,"coveredCLOs":["CLO1"],"bloom":"Apply","topic":"Recursion"}]}',
+  );
   assert.strictEqual(result.questions.length, 1);
   assert.strictEqual(result.questions[0].questionNumber, 1);
-  assert.deepStrictEqual(result.questions[0].coveredCLOs, ['CLO1']);
+  assert.deepStrictEqual(result.questions[0].coveredCLOs, ["CLO1"]);
 });
 
-test('parseModelJSON normalizes a missing similarity to null and missing coveredCLOs to []', () => {
-  const result = parseModelJSON('{"questions":[{"questionNumber":1,"bloom":"Apply","topic":"t"}]}');
+test("parseModelJSON normalizes a missing similarity to null and missing coveredCLOs to []", () => {
+  const result = parseModelJSON(
+    '{"questions":[{"questionNumber":1,"bloom":"Apply","topic":"t"}]}',
+  );
   assert.strictEqual(result.questions[0].similarity, null);
   assert.deepStrictEqual(result.questions[0].coveredCLOs, []);
 });
 
-test('parseModelJSON strips markdown code fences', () => {
+test("parseModelJSON strips markdown code fences", () => {
   const result = parseModelJSON('```json\n{"questions":[]}\n```');
   assert.deepStrictEqual(result.questions, []);
 });
 
-test('parseModelJSON throws on missing questions array', () => {
+test("parseModelJSON throws on missing questions array", () => {
   assert.throws(() => parseModelJSON('{"foo":1}'), /missing "questions" array/);
 });
-```
+````
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -343,13 +381,19 @@ Expected: FAIL — `buildPrompt is not a function`
 - [ ] **Step 3: Write the minimal implementation**
 
 Append to `lib/analyze.js` (before `module.exports`):
-```js
+
+````js
 function buildPrompt({ clos, questions, pastExams }) {
-  const cloList = clos.map((c) => `${c.id}: ${c.text}`).join('\n');
-  const questionList = questions.map((q) => `Q${q.number}: ${q.text}`).join('\n');
+  const cloList = clos.map((c) => `${c.id}: ${c.text}`).join("\n");
+  const questionList = questions
+    .map((q) => `Q${q.number}: ${q.text}`)
+    .join("\n");
   const pastList = pastExams
-    .map((y) => `Year ${y.year}:\n${y.questions.map((q, i) => `Q${i + 1}: ${q}`).join('\n')}`)
-    .join('\n\n');
+    .map(
+      (y) =>
+        `Year ${y.year}:\n${y.questions.map((q, i) => `Q${i + 1}: ${q}`).join("\n")}`,
+    )
+    .join("\n\n");
 
   return `You are auditing a university exam before it is published.
 
@@ -360,7 +404,7 @@ DRAFT EXAM (this year):
 ${questionList}
 
 PAST EXAMS (for recycling check):
-${pastList || '(none provided)'}
+${pastList || "(none provided)"}
 
 For each draft-exam question, determine:
 1. Which CLO id(s) it tests (use the exact ids given above; empty array if none apply)
@@ -384,7 +428,11 @@ Omit the "similarity" key entirely for questions with no notable past match (bel
 }
 
 function parseModelJSON(rawText) {
-  const cleaned = rawText.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+  const cleaned = rawText
+    .trim()
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/, "")
+    .trim();
   const parsed = JSON.parse(cleaned);
   if (!parsed || !Array.isArray(parsed.questions)) {
     throw new Error('Model response missing "questions" array');
@@ -398,11 +446,18 @@ function parseModelJSON(rawText) {
   }));
   return { questions };
 }
-```
+````
 
 Update the export line:
+
 ```js
-module.exports = { parseCLOs, parseNumberedQuestions, parsePastExams, buildPrompt, parseModelJSON };
+module.exports = {
+  parseCLOs,
+  parseNumberedQuestions,
+  parsePastExams,
+  buildPrompt,
+  parseModelJSON,
+};
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
@@ -422,6 +477,7 @@ git commit -m "feat: add prompt builder and model-response parser"
 ### Task 4: Faculty auth — Supabase SSR clients, middleware, login/signup
 
 **Files:**
+
 - Create: `lib/supabase/client.js`
 - Create: `lib/supabase/server.js`
 - Create: `src/middleware.js`
@@ -429,6 +485,13 @@ git commit -m "feat: add prompt builder and model-response parser"
 - Create: `src/app/(auth)/signup/page.js`
 
 **Interfaces:**
+
+- Produces: `getBrowserSupabase() -> SupabaseClient` (browser, cookie-aware), `getServerSupabase() -> Promise<SupabaseClient>` (server, reads/writes cookies via `next/headers`) — consumed by Task 5/6's route handlers.
+
+This task is thin glue over `@supabase/ssr` (session cookie handling, auth redirects, two plain HTML forms) — no pure logic to TDD here, same reasoning `Backend_Plan.md` gives for its equivalent task. Verified manually in Task 7, not unit tested.
+
+- [ ] **Step 1: Install the Supabase SSR client**
+
 - Produces: `getBrowserSupabase() -> SupabaseClient` (browser, cookie-aware), `getServerSupabase() -> Promise<SupabaseClient>` (server, reads/writes cookies via `next/headers`) — consumed by Task 5/6's route handlers.
 
 This task is thin glue over `@supabase/ssr` (session cookie handling, auth redirects, two plain HTML forms) — no pure logic to TDD here, same reasoning `Backend_Plan.md` gives for its equivalent task. Verified manually in Task 7, not unit tested.
@@ -439,6 +502,15 @@ This task is thin glue over `@supabase/ssr` (session cookie handling, auth redir
 npm install @supabase/ssr
 ```
 (`@supabase/supabase-js` is already a dependency.) `ponytail:` `@supabase/ssr` is the one dependency worth adding here — hand-rolling cookie-based session refresh for the App Router would be far more code, and far easier to get wrong on a trust boundary, than using Supabase's own SSR helper.
+
+(`@supabase/supabase-js` is already a dependency.) `ponytail:` `@supabase/ssr` is the one dependency worth adding here — hand-rolling cookie-based session refresh for the App Router would be far more code, and far easier to get wrong on a trust boundary, than using Supabase's own SSR helper.
+
+- [ ] **Step 2: Browser client**
+
+`lib/supabase/client.js`:
+
+```js
+import { createBrowserClient } from "@supabase/ssr";
 
 - [ ] **Step 2: Browser client**
 
@@ -457,6 +529,10 @@ export function getBrowserSupabase() {
 - [ ] **Step 3: Server client**
 
 `lib/supabase/server.js`:
+
+```js
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 ```js
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -473,6 +549,9 @@ export async function getServerSupabase() {
         },
         setAll(cookiesToSet) {
           try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options),
+            );
             cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
           } catch {
             // called from a Server Component render path — middleware.js refreshes the session instead
@@ -487,6 +566,10 @@ export async function getServerSupabase() {
 - [ ] **Step 4: Middleware — refresh session, protect app routes**
 
 `src/middleware.js` (inside `src/` because this scaffold uses the `src/` layout — `context.md`'s deviation note):
+
+```js
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse } from "next/server";
 ```js
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
@@ -503,6 +586,28 @@ export async function middleware(request) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          );
+        },
+      },
+    },
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isAuthRoute =
+    request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/signup");
+  if (!user && !isAuthRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
@@ -521,6 +626,7 @@ export async function middleware(request) {
   }
   if (user && isAuthRoute) {
     const url = request.nextUrl.clone();
+    url.pathname = "/";
     url.pathname = '/';
     return NextResponse.redirect(url);
   }
@@ -529,6 +635,7 @@ export async function middleware(request) {
 }
 
 export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/).*)"],
   matcher: ['/((?!_next/static|_next/image|favicon.ico|api/).*)'],
 };
 ```
@@ -536,6 +643,17 @@ export const config = {
 - [ ] **Step 5: Login page**
 
 `src/app/(auth)/login/page.js`:
+
+```jsx
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { getBrowserSupabase } from "../../../../lib/supabase/client";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 ```jsx
 'use client';
 import { useState } from 'react';
@@ -550,6 +668,12 @@ export default function LoginPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    setError("");
+    const supabase = getBrowserSupabase();
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     setError('');
     const supabase = getBrowserSupabase();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -557,6 +681,7 @@ export default function LoginPage() {
       setError(error.message);
       return;
     }
+    router.push("/");
     router.push('/');
     router.refresh();
   }
@@ -564,6 +689,24 @@ export default function LoginPage() {
   return (
     <form onSubmit={handleSubmit}>
       <h1>Faculty Login</h1>
+      <label>
+        Email
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </label>
+      <label>
+        Password
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+      </label>
       <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
       <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
       {error && <p role="alert">{error}</p>}
@@ -577,6 +720,17 @@ export default function LoginPage() {
 - [ ] **Step 6: Signup page**
 
 `src/app/(auth)/signup/page.js`:
+
+```jsx
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { getBrowserSupabase } from "../../../../lib/supabase/client";
+
+export default function SignupPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 ```jsx
 'use client';
 import { useState } from 'react';
@@ -591,6 +745,7 @@ export default function SignupPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    setError("");
     setError('');
     const supabase = getBrowserSupabase();
     const { error } = await supabase.auth.signUp({ email, password });
@@ -598,6 +753,7 @@ export default function SignupPage() {
       setError(error.message);
       return;
     }
+    router.push("/");
     router.push('/');
     router.refresh();
   }
@@ -605,6 +761,25 @@ export default function SignupPage() {
   return (
     <form onSubmit={handleSubmit}>
       <h1>Faculty Sign Up</h1>
+      <label>
+        Email
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </label>
+      <label>
+        Password
+        <input
+          type="password"
+          minLength={6}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+      </label>
       <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
       <label>Password<input type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
       {error && <p role="alert">{error}</p>}
@@ -631,6 +806,11 @@ git commit -m "feat: real faculty auth (Supabase SSR, email+password, login/sign
 ### Task 5: `/api/analyze` route handler
 
 **Files:**
+
+- Create: `src/app/api/analyze/route.js`
+
+**Interfaces:**
+
 - Create: `src/app/api/analyze/route.js`
 
 **Interfaces:**
@@ -640,6 +820,24 @@ git commit -m "feat: real faculty auth (Supabase SSR, email+password, login/sign
 - [ ] **Step 1: Write the handler**
 
 `src/app/api/analyze/route.js`:
+
+```js
+import {
+  parseCLOs,
+  parseNumberedQuestions,
+  parsePastExams,
+  buildPrompt,
+  parseModelJSON,
+} from "../../../../lib/analyze";
+import { getServerSupabase } from "../../../../lib/supabase/server";
+
+export async function POST(req) {
+  const supabase = await getServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return Response.json({ error: "Not signed in" }, { status: 401 });
 ```js
 import { parseCLOs, parseNumberedQuestions, parsePastExams, buildPrompt, parseModelJSON } from '../../../../lib/analyze';
 import { getServerSupabase } from '../../../../lib/supabase/server';
@@ -651,63 +849,96 @@ export async function POST(req) {
     return Response.json({ error: 'Not signed in' }, { status: 401 });
   }
 
-  const { clos = '', exam = '', pastExams = '' } = await req.json();
+  const { clos = "", exam = "", pastExams = "" } = await req.json();
   if (!clos.trim() || !exam.trim()) {
-    return Response.json({ error: 'CLOs and exam text are required' }, { status: 400 });
+    return Response.json(
+      { error: "CLOs and exam text are required" },
+      { status: 400 },
+    );
   }
 
   const parsedClos = parseCLOs(clos);
   const parsedQuestions = parseNumberedQuestions(exam);
   const parsedPastExams = parsePastExams(pastExams);
-  const prompt = buildPrompt({ clos: parsedClos, questions: parsedQuestions, pastExams: parsedPastExams });
+  const prompt = buildPrompt({
+    clos: parsedClos,
+    questions: parsedQuestions,
+    pastExams: parsedPastExams,
+  });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return Response.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 });
+    return Response.json(
+      { error: "ANTHROPIC_API_KEY not configured" },
+      { status: 500 },
+    );
   }
 
   let anthropicRes;
   try {
-    anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
+    anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
       headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-5',
+        model: "claude-sonnet-5",
         max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: "user", content: prompt }],
       }),
     });
   } catch (e) {
-    return Response.json({ error: `Anthropic API request failed: ${e.message}` }, { status: 502 });
+    return Response.json(
+      { error: `Anthropic API request failed: ${e.message}` },
+      { status: 502 },
+    );
   }
 
   if (!anthropicRes.ok) {
     const errText = await anthropicRes.text();
-    return Response.json({ error: `Anthropic API error: ${errText}` }, { status: 502 });
+    return Response.json(
+      { error: `Anthropic API error: ${errText}` },
+      { status: 502 },
+    );
   }
 
   const data = await anthropicRes.json();
-  const rawText = data.content?.[0]?.text || '';
+  const rawText = data.content?.[0]?.text || "";
 
   let parsed;
   try {
     parsed = parseModelJSON(rawText);
   } catch (e) {
-    return Response.json({ error: `Could not parse model output: ${e.message}` }, { status: 502 });
+    return Response.json(
+      { error: `Could not parse model output: ${e.message}` },
+      { status: 502 },
+    );
   }
 
-  const result = { clos: parsedClos, questions: parsedQuestions, analysis: parsed.questions };
+  const result = {
+    clos: parsedClos,
+    questions: parsedQuestions,
+    analysis: parsed.questions,
+  };
 
-  const { error: insertError } = await supabase
-    .from('analysis_runs')
-    .insert({ user_id: user.id, clos_text: clos, exam_text: exam, past_exams_text: pastExams, result });
+  const { error: insertError } = await supabase.from("analysis_runs").insert({
+    user_id: user.id,
+    clos_text: clos,
+    exam_text: exam,
+    past_exams_text: pastExams,
+    result,
+  });
 
   if (insertError) {
-    return Response.json({ ...result, warning: `Saved result but failed to persist run: ${insertError.message}` }, { status: 200 });
+    return Response.json(
+      {
+        ...result,
+        warning: `Saved result but failed to persist run: ${insertError.message}`,
+      },
+      { status: 200 },
+    );
   }
 
   return Response.json(result);
@@ -730,6 +961,11 @@ git commit -m "feat: add POST /api/analyze route handler"
 ### Task 6: `/api/runs` route handler
 
 **Files:**
+
+- Create: `src/app/api/runs/route.js`
+
+**Interfaces:**
+
 - Create: `src/app/api/runs/route.js`
 
 **Interfaces:**
@@ -739,6 +975,17 @@ git commit -m "feat: add POST /api/analyze route handler"
 - [ ] **Step 1: Write the handler**
 
 `src/app/api/runs/route.js`:
+
+```js
+import { getServerSupabase } from "../../../../lib/supabase/server";
+
+export async function GET() {
+  const supabase = await getServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return Response.json({ error: "Not signed in" }, { status: 401 });
 ```js
 import { getServerSupabase } from '../../../../lib/supabase/server';
 
@@ -753,9 +1000,9 @@ export async function GET() {
   // already restricts every row this connection can see, so re-filtering client-side would
   // be redundant, not defense-in-depth. RLS is the actual trust boundary.
   const { data, error } = await supabase
-    .from('analysis_runs')
-    .select('id, created_at, result')
-    .order('created_at', { ascending: false });
+    .from("analysis_runs")
+    .select("id, created_at, result")
+    .order("created_at", { ascending: false });
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -778,6 +1025,25 @@ git commit -m "feat: add GET /api/runs route handler"
 **Files:** none (verification-only task).
 
 **Interfaces:**
+
+- Consumes: the full backend (Tasks 0-6), deployed. Self-contained — does not require Shads' UI or Hrittika's routes to exist, beyond using the browser to reach `/login`.
+
+`ponytail:` real cookie-based sessions behind `src/middleware.js` are awkward to script with bare `fetch`/`curl` (cookie jar + Next's specific cookie names) for marginal benefit over just using the browser — the anonymous-auth version of this plan used a scripted smoke test with `signInAnonymously()`; that no longer applies now that signing in requires a real account. Verified manually instead, same as `Backend_Plan.md`'s equivalent step.
+
+- [ ] **Step 1: Redeploy**
+
+```bash
+npx vercel --prod --yes
+```
+
+- [ ] **Step 2: Manual end-to-end check against the deployed URL**
+
+1. Open the deployed URL in an incognito window → confirm it redirects to `/login`.
+2. Click through to `/signup`, create a test faculty account (e.g. `demo1@test.edu` / a 6+ char password) → confirm it redirects to `/` signed in (no email-confirmation wait, since Task 4 Step 7 disabled that).
+3. Paste this exact demo data (engineered to trigger both wow-moment flags) and click Analyze:
+
+CLOs:
+
 - Consumes: the full backend (Tasks 0-6), deployed. Self-contained — does not require Shads' UI or Hrittika's routes to exist, beyond using the browser to reach `/login`.
 
 `ponytail:` real cookie-based sessions behind `src/middleware.js` are awkward to script with bare `fetch`/`curl` (cookie jar + Next's specific cookie names) for marginal benefit over just using the browser — the anonymous-auth version of this plan used a scripted smoke test with `signInAnonymously()`; that no longer applies now that signing in requires a real account. Verified manually instead, same as `Backend_Plan.md`'s equivalent step.
@@ -803,6 +1069,16 @@ CLO4: Design a hash table from scratch
 ```
 
 Draft Exam (this year):
+
+```
+1. What is the time complexity of binary search, and why?
+2. Write a recursive function to compute the nth Fibonacci number.
+3. Compare the average-case and worst-case time complexity of quicksort vs mergesort.
+```
+
+Past Exams:
+
+```
 ```
 1. What is the time complexity of binary search, and why?
 2. Write a recursive function to compute the nth Fibonacci number.
