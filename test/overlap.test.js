@@ -36,3 +36,11 @@ test('parseOverlapJSON strips markdown fences and throws on missing keys', () =>
   assert.deepStrictEqual(result, { overlaps: [], gaps: [] });
   assert.throws(() => parseOverlapJSON('{"overlaps":[]}'), /missing "gaps" array/);
 });
+
+test('parseExistingSyllabi returns an empty array for blank input', () => {
+  assert.deepStrictEqual(parseExistingSyllabi(''), []);
+});
+
+test('parseTopics ignores blank lines between topics', () => {
+  assert.deepStrictEqual(parseTopics('Recursion\n\nSorting\n'), ['Recursion', 'Sorting']);
+});

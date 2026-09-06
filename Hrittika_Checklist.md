@@ -6,6 +6,6 @@ Running progress tracker for [Hrittika_Plan.md](Hrittika_Plan.md)'s 7 tasks. The
 - [x] ~~Task 2: `/api/overlap` route handler + fixture~~
 - [x] ~~Task 3: Grader Consistency — parsers, prompt builder, response parser~~
 - [x] ~~Task 4: `/api/grader-consistency` route handler + fixture~~
-- [ ] Task 5: AI-Anchored Grading — parsers, prompt builder, response parser
-- [ ] Task 6: `/api/grade` route handler + fixture
-- [ ] Task 7: Cross-route QA — edge cases on all 3 routes
+- [x] ~~Task 5: AI-Anchored Grading — parsers, prompt builder, response parser~~
+- [x] ~~Task 6: `/api/grade` route handler + fixture~~
+- [x] ~~Task 7: Cross-route QA — edge cases on all 3 routes~~
