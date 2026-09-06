@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import IdentityChip from '@/components/IdentityChip';
 
 const TABS = [
   { href: '/dashboard', label: 'Dashboard' },
@@ -16,47 +15,64 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   return (
     <div className="min-h-[100dvh]">
-      <div
-        className="flex items-center gap-2 px-4 pt-4"
-        style={{ flexWrap: 'wrap' }}
-      >
-        <nav
-          className="flex"
-          style={{
-            border: '3px solid #111', background: '#fff',
-            overflowX: 'auto', maxWidth: '100%',
-          }}
-          aria-label="Main navigation"
+        <div
+          className="grid items-center gap-2 px-4 pt-4"
+          style={{ gridTemplateColumns: '1fr auto 1fr' }}
         >
-          {TABS.map((tab, i) => {
-            const on = pathname === tab.href;
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className="cursor-pointer font-bold uppercase tracking-wide whitespace-nowrap"
-                style={{
-                  fontSize: 12.5,
-                  padding: '11px 14px',
-                  minHeight: 44,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  borderRight: i < TABS.length - 1 ? '3px solid #111' : 'none',
-                  background: on ? '#111' : '#fff',
-                  color: on ? '#FAF8F3' : '#111',
-                  textDecoration: 'none',
-                }}
-              >
-                {tab.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="flex items-center gap-2" style={{ marginLeft: 'auto' }}>
-          <IdentityChip />
+          <span className="fz-display" aria-hidden="true" style={{ fontSize: 18, color: '#55524a', justifySelf: 'start' }}>
+            F.
+          </span>
+          <nav
+            className="flex"
+            style={{
+              border: '3px solid #111', background: '#fff',
+              overflowX: 'auto', maxWidth: '100%', justifySelf: 'center',
+            }}
+            aria-label="Main navigation"
+          >
+            {TABS.map((tab, i) => {
+              const on = pathname === tab.href;
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  className="cursor-pointer font-bold uppercase tracking-wide whitespace-nowrap"
+                  style={{
+                    fontSize: 12.5,
+                    padding: '11px 14px',
+                    minHeight: 44,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    borderRight: i < TABS.length - 1 ? '3px solid #111' : 'none',
+                    background: on ? '#111' : '#fff',
+                    color: on ? '#FAF8F3' : '#111',
+                    textDecoration: 'none',
+                  }}
+                >
+                  {tab.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div style={{ justifySelf: 'end' }}>
+            <Link
+              href="/profile"
+              aria-label="Profile"
+              className="cursor-pointer"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                border: '3px solid #111', background: '#FFD23F',
+                padding: '9px 14px', minHeight: 44,
+                fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
+                color: '#111', textDecoration: 'none', cursor: 'pointer',
+                boxShadow: '3px 3px 0 #111',
+              }}
+            >
+              Profile
+            </Link>
+          </div>
         </div>
+        <main className="px-4 pb-12 pt-6">{children}</main>
       </div>
-      <main className="px-4 pb-12 pt-6">{children}</main>
-    </div>
   );
 }
