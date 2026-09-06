@@ -23,8 +23,8 @@ Every one of the three per-person plans (`Arko_Plan.md`, `Hrittika_Plan.md`, and
 
 | | Value |
 |---|---|
-| Model | `gemini-2.5-flash` (bump to `gemini-2.5-pro` if quality looks weak in QA — one-line model-id swap only) |
-| Endpoint | `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent` |
+| Model | `gemini-3.6-flash` (bumped 2026-09-06 — `gemini-2.5-flash` now returns 404 "no longer available to new users" from Google, confirmed live against a real key; bump to `gemini-3.6-pro` if quality looks weak in QA — one-line model-id swap only) |
+| Endpoint | `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent` |
 | Auth header | `x-goog-api-key: <GEMINI_API_KEY>` |
 | Env var | `GEMINI_API_KEY` (replaces `ANTHROPIC_API_KEY` everywhere, including `plan.md`'s Frozen Contract env-var line and any Vercel env config) |
 | Request | `{ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 } }` — `maxOutputTokens` is 4096 for `/api/analyze`, 2048 for the 3 secondary routes |

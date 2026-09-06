@@ -35,8 +35,8 @@ Every call site is currently identical in shape: build a prompt from parsed text
 ### Provider details
 | | Value |
 |---|---|
-| Model id | `gemini-2.5-flash` (fast + cheap — right fit for 4 route types on a hackathon clock). If quality on the recycled-question or AI-anchored-grading tasks looks weak during QA, `gemini-2.5-pro` is a one-line model-id swap, same request/response shape. |
-| Endpoint | `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent` |
+| Model id | `gemini-3.6-flash` (bumped 2026-09-06 — `gemini-2.5-flash` is retired for new API keys, confirmed via a live 404 from Google recommending this id). Fast + cheap — right fit for 4 route types on a hackathon clock. If quality on the recycled-question or AI-anchored-grading tasks looks weak during QA, `gemini-3.6-pro` is a one-line model-id swap, same request/response shape. |
+| Endpoint | `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent` |
 | Auth | `x-goog-api-key: <GEMINI_API_KEY>` header (not a URL query param — keeps the key out of logs/redirect chains) |
 | Env var | `GEMINI_API_KEY` — replaces `ANTHROPIC_API_KEY` everywhere |
 
@@ -101,43 +101,19 @@ Before (Anthropic):
   const rawText = data.content?.[0]?.text || '';
 ```
 
-After (Gemini):
+After (Gemini) — updated 2026-09-06 to go through `lib/gemini.js`'s `callGemini()`, which parses `GEMINI_API_KEY` as one or several comma-separated keys and rotates to the next one on a 429 (see `lib/gemini.js` and `test/gemini.test.js`, added by Hrittika for the 3 secondary routes; reuse it here rather than re-inlining a single-key fetch):
 ```js
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return Response.json({ error: 'GEMINI_API_KEY not configured' }, { status: 500 });
+  const { callGemini } = require('../../../../lib/gemini'); // or `import` — same helper, no provider-specific code below
+
+  const result = await callGemini({ prompt, maxOutputTokens: 4096 }); // 2048 on the 3 secondary routes
+  if (!result.ok) {
+    return Response.json({ error: result.error }, { status: result.status });
   }
 
-  let geminiRes;
-  try {
-    geminiRes = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
-      {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 }, // 2048 on the 3 secondary routes
-        }),
-      },
-    );
-  } catch (e) {
-    return Response.json({ error: `Gemini API request failed: ${e.message}` }, { status: 502 });
-  }
-
-  if (!geminiRes.ok) {
-    const errText = await geminiRes.text();
-    return Response.json({ error: `Gemini API error: ${errText}` }, { status: 502 });
-  }
-
-  const data = await geminiRes.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const rawText = result.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 ```
 
-No new npm dependency — this is native `fetch`, same as the Anthropic call it replaces.
+No new npm dependency — `callGemini()` is native `fetch` under the hood, same as the Anthropic call it replaces.
 
 ---
 
