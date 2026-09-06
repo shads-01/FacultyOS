@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
-import { runsResponse } from '@/components/mockResponses';
+import { useEffect, useState } from 'react';
 
 const STAGES = [
   {
@@ -31,8 +30,23 @@ const STAGES = [
 ];
 
 export default function DashboardPage() {
-  // TODO(integration): fetch GET /api/runs with Bearer token in live mode.
-  const [runs] = useState(runsResponse.runs);
+  const [runs, setRuns] = useState([]);
+  const [runsLoading, setRunsLoading] = useState(true);
+  const [runsError, setRunsError] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/runs')
+      .then(async (res) => {
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(err.error || `API error ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((data) => setRuns(data.runs || []))
+      .catch((err) => setRunsError(err.message))
+      .finally(() => setRunsLoading(false));
+  }, []);
 
   return (
     <div className="mx-auto" style={{ maxWidth: 1160 }}>
@@ -68,7 +82,11 @@ export default function DashboardPage() {
 
       <div className="fz-card" style={{ marginTop: 24 }}>
         <h3 className="fz-label" style={{ fontSize: 13 }}>Recent runs</h3>
-        {runs.length === 0 ? (
+        {runsLoading ? (
+          <p style={{ color: '#55524a', fontSize: 13 }}>Loading runs…</p>
+        ) : runsError ? (
+          <div className="fz-strip" style={{ marginBottom: 14 }}>{runsError}</div>
+        ) : runs.length === 0 ? (
           <p style={{ color: '#55524a', fontSize: 13 }}>
             No runs yet — start at <Link href="/syllabus-overlap" className="cursor-pointer" style={{ fontWeight: 700, color: '#E11D1D' }}>Stage 1</Link>.
           </p>

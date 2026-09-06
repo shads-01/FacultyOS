@@ -1,12 +1,26 @@
 'use client';
-import { useState } from 'react';
-import { runsResponse } from '@/components/mockResponses';
+import { useEffect, useState } from 'react';
 import ExamQualityReport from '@/components/ExamQualityReport';
 
 export default function HistoryPage() {
-  // TODO(integration): fetch GET /api/runs with Bearer token in live mode.
-  const [runs] = useState(runsResponse.runs);
+  const [runs, setRuns] = useState([]);
+  const [runsLoading, setRunsLoading] = useState(true);
+  const [runsError, setRunsError] = useState(null);
   const [openId, setOpenId] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/runs')
+      .then(async (res) => {
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: res.statusText }));
+          throw new Error(err.error || `API error ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((data) => setRuns(data.runs || []))
+      .catch((err) => setRunsError(err.message))
+      .finally(() => setRunsLoading(false));
+  }, []);
 
   return (
     <div className="mx-auto" style={{ maxWidth: 1160 }}>
@@ -15,7 +29,13 @@ export default function HistoryPage() {
         Every exam-quality audit you have run. Click a run to replay its full report — no re-analysis needed.
       </p>
 
-      {runs.length === 0 ? (
+      {runsLoading ? (
+        <div className="fz-card">
+          <p style={{ color: '#55524a', fontSize: 13 }}>Loading runs…</p>
+        </div>
+      ) : runsError ? (
+        <div className="fz-strip" style={{ marginBottom: 14 }}>{runsError}</div>
+      ) : runs.length === 0 ? (
         <div className="fz-card">
           <p style={{ color: '#55524a', fontSize: 13 }}>No past runs yet — run an audit on the Exam Quality screen first.</p>
         </div>
