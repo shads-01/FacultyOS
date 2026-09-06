@@ -224,4 +224,16 @@
     font-size: 13px;
     padding: 10px 14px;
   }
+  .fz-lift {
+    transition: transform 150ms, box-shadow 150ms;
+  }
+  .fz-lift:hover { transform: translate(-2px, -2px); box-shadow: 9px 9px 0 #111; }
+  .fz-table tbody tr { transition: background 150ms; }
+  .fz-table tbody tr:hover { background: #F0EDE4; }
+  .fz-table tbody tr:hover.fz-flag-row { background: #FECACA; }
+  ::selection { background: #FFD23F; color: #111; }
+  * { scrollbar-color: #111 #F0EDE4; }
+  @media (prefers-reduced-motion: reduce) {
+    .fz-lift, .fz-btn, .fz-table tbody tr { transition: none; }
+  }
 }
