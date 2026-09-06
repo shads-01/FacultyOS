@@ -7,6 +7,7 @@ import { runFeature } from '@/lib/api';
 import { demoInputs } from '@/components/mockResponses';
 import OverlapReport from '@/components/OverlapReport';
 import NextActions from '@/components/NextActions';
+import PdfOrPasteField from '@/components/PdfOrPasteField';
 
 export default function SyllabusOverlapPage() {
   const [proposedSyllabus, setProposedSyllabus] = useState('');
@@ -37,45 +38,42 @@ export default function SyllabusOverlapPage() {
       </p>
 
       <div style={{ marginBottom: 14 }}>
-        <button
-          type="button"
+        <select
           className="fz-btn"
           style={{ fontSize: 11, padding: '10px 16px', boxShadow: '3px 3px 0 #111', background: '#FAF8F3' }}
-          onClick={() => {
-            setProposedSyllabus(demoInputs.overlap.proposedSyllabus);
-            setExistingSyllabi(demoInputs.overlap.existingSyllabi);
+          value=""
+          onChange={(e) => {
+            const scenario = demoInputs.overlap.find((s) => s.key === e.target.value);
+            if (!scenario) return;
+            setProposedSyllabus(scenario.data.proposedSyllabus);
+            setExistingSyllabi(scenario.data.existingSyllabi);
           }}
         >
-          Load example
-        </button>
+          <option value="">Load data…</option>
+          {demoInputs.overlap.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+        </select>
       </div>
 
       {error && <div className="fz-strip" style={{ marginBottom: 14 }}>{error}</div>}
 
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 24 }}>
-          <div>
-            <label className="fz-label" htmlFor="proposed">Proposed Syllabus</label>
-            <textarea
-              id="proposed"
-              className="fz-textarea"
-              value={proposedSyllabus}
-              onChange={(e) => setProposedSyllabus(e.target.value)}
-              placeholder={'Big-O notation\nRecursion\nHash tables'}
-            />
-            <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>one topic per line</p>
-          </div>
-          <div>
-            <label className="fz-label" htmlFor="existing">Existing Course Syllabi</label>
-            <textarea
-              id="existing"
-              className="fz-textarea"
-              value={existingSyllabi}
-              onChange={(e) => setExistingSyllabi(e.target.value)}
-              placeholder={'Intro to Algorithms\nBig-O notation\nRecursion\n\nData Structures I\nArrays'}
-            />
-            <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>course-name line, then its topics · blank line between courses</p>
-          </div>
+          <PdfOrPasteField
+            id="proposed"
+            label="Proposed Syllabus"
+            value={proposedSyllabus}
+            onChange={setProposedSyllabus}
+            placeholder={'Big-O notation\nRecursion\nHash tables'}
+            hint="one topic per line · PDF OCR reads first 20 pages of scans"
+          />
+          <PdfOrPasteField
+            id="existing"
+            label="Existing Course Syllabi"
+            value={existingSyllabi}
+            onChange={setExistingSyllabi}
+            placeholder={'Intro to Algorithms\nBig-O notation\nRecursion\n\nData Structures I\nArrays'}
+            hint="course-name line, then its topics · blank line between courses · PDF OCR reads first 20 pages of scans"
+          />
         </div>
 
         <button type="submit" className="fz-btn" disabled={loading}>
