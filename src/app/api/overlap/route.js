@@ -1,14 +1,14 @@
-import { parseTopics, parseExistingSyllabi, buildOverlapPrompt, parseOverlapJSON } from '../../../../lib/overlap';
+import { parseTopics, buildOverlapPrompt, parseOverlapJSON } from '../../../../lib/overlap';
+import { existingCourses } from '../../../../lib/courseCatalog';
 import { callGemini } from '../../../../lib/gemini';
 
 export async function POST(req) {
-  const { proposedSyllabus = '', existingSyllabi = '' } = await req.json();
+  const { proposedSyllabus = '' } = await req.json();
   if (!proposedSyllabus.trim()) {
     return Response.json({ error: 'Proposed syllabus is required' }, { status: 400 });
   }
 
   const proposedTopics = parseTopics(proposedSyllabus);
-  const existingCourses = parseExistingSyllabi(existingSyllabi);
   const prompt = buildOverlapPrompt({ proposedTopics, existingCourses });
 
   const result = await callGemini({ prompt, maxOutputTokens: 2048 });

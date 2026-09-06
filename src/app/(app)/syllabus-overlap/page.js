@@ -11,7 +11,6 @@ import PdfOrPasteField from '@/components/PdfOrPasteField';
 
 export default function SyllabusOverlapPage() {
   const [proposedSyllabus, setProposedSyllabus] = useState('');
-  const [existingSyllabi, setExistingSyllabi] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -21,7 +20,7 @@ export default function SyllabusOverlapPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await runFeature('overlap', { proposedSyllabus, existingSyllabi });
+      const data = await runFeature('overlap', { proposedSyllabus });
       setResult(data);
     } catch (err) {
       setError(err.message);
@@ -34,7 +33,7 @@ export default function SyllabusOverlapPage() {
     <div className="mx-auto" style={{ maxWidth: 1160 }}>
       <h1 className="fz-display" style={{ fontSize: 34, marginBottom: 6 }}>Syllabus Overlap</h1>
       <p style={{ color: '#55524a', fontSize: 13.5, marginBottom: 18, maxWidth: 560 }}>
-        Paste your proposed syllabus and the existing course syllabi — the audit flags overlapping topics and curriculum gaps.
+        Paste your proposed syllabus — the audit checks it against the existing course catalog and flags overlapping topics and curriculum gaps.
       </p>
 
       <div style={{ marginBottom: 14 }}>
@@ -46,7 +45,6 @@ export default function SyllabusOverlapPage() {
             const scenario = demoInputs.overlap.find((s) => s.key === e.target.value);
             if (!scenario) return;
             setProposedSyllabus(scenario.data.proposedSyllabus);
-            setExistingSyllabi(scenario.data.existingSyllabi);
           }}
         >
           <option value="">Load data…</option>
@@ -57,7 +55,7 @@ export default function SyllabusOverlapPage() {
       {error && <div className="fz-strip" style={{ marginBottom: 14 }}>{error}</div>}
 
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 24 }}>
+        <div style={{ maxWidth: 560, marginBottom: 24 }}>
           <PdfOrPasteField
             id="proposed"
             label="Proposed Syllabus"
@@ -65,14 +63,6 @@ export default function SyllabusOverlapPage() {
             onChange={setProposedSyllabus}
             placeholder={'Big-O notation\nRecursion\nHash tables'}
             hint="one topic per line · PDF OCR reads first 20 pages of scans"
-          />
-          <PdfOrPasteField
-            id="existing"
-            label="Existing Course Syllabi"
-            value={existingSyllabi}
-            onChange={setExistingSyllabi}
-            placeholder={'Intro to Algorithms\nBig-O notation\nRecursion\n\nData Structures I\nArrays'}
-            hint="course-name line, then its topics · blank line between courses · PDF OCR reads first 20 pages of scans"
           />
         </div>
 

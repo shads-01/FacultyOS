@@ -1,19 +1,11 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { test } = require('node:test');
 const assert = require('node:assert');
-const { parseTopics, parseExistingSyllabi, buildOverlapPrompt, parseOverlapJSON } = require('../lib/overlap');
+const { parseTopics, buildOverlapPrompt, parseOverlapJSON } = require('../lib/overlap');
 
 test('parseTopics splits one topic per line', () => {
   const result = parseTopics('Big-O notation\nRecursion\nSorting');
   assert.deepStrictEqual(result, ['Big-O notation', 'Recursion', 'Sorting']);
-});
-
-test('parseExistingSyllabi groups topics under course-name headers', () => {
-  const result = parseExistingSyllabi('Intro to Algorithms\nBig-O notation\nRecursion\n\nData Structures I\nArrays\nLinked lists');
-  assert.deepStrictEqual(result, [
-    { course: 'Intro to Algorithms', topics: ['Big-O notation', 'Recursion'] },
-    { course: 'Data Structures I', topics: ['Arrays', 'Linked lists'] },
-  ]);
 });
 
 test('buildOverlapPrompt embeds the proposed topics and existing courses', () => {
@@ -36,10 +28,6 @@ test('parseOverlapJSON strips markdown fences and throws on missing keys', () =>
   const result = parseOverlapJSON('```json\n{"overlaps":[],"gaps":[]}\n```');
   assert.deepStrictEqual(result, { overlaps: [], gaps: [] });
   assert.throws(() => parseOverlapJSON('{"overlaps":[]}'), /missing "gaps" array/);
-});
-
-test('parseExistingSyllabi returns an empty array for blank input', () => {
-  assert.deepStrictEqual(parseExistingSyllabi(''), []);
 });
 
 test('parseTopics ignores blank lines between topics', () => {

@@ -14,7 +14,7 @@ Faculty paste Course Learning Outcomes + a draft exam + past exams (plus, on thr
 | Screen | Features | Faculty pastes | Clicks | Gets back |
 |---|---|---|---|---|
 | Exam Quality | #1 Exam Quality Check, #5 CLO Coverage Matrix, #4 Dedup & Tagging | CLOs, draft exam, past exams | Analyze → `POST /api/analyze` (one call covers all 3) | Coverage matrix (blank row = untested CLO), recycled-question list (match % + source), Bloom-level tag chips per question. Auto-saves to History |
-| Syllabus Overlap | #3 Syllabus/Curriculum Overlap | Proposed syllabus, existing course syllabi | Compare → `POST /api/overlap` | Topic-by-topic overlap % against each existing course, plus a gap list (curriculum topics the proposed syllabus never touches) |
+| Syllabus Overlap | #3 Syllabus/Curriculum Overlap | Proposed syllabus (checked against the built-in existing-course catalog, `lib/courseCatalog.js`) | Compare → `POST /api/overlap` | Topic-by-topic overlap % against each existing course, plus a gap list (curriculum topics the proposed syllabus never touches) |
 | Grader Consistency | #2 Multi-Grader Consistency Check | Rubric, student answers, 2+ graders' own scores for the same answers | Check → `POST /api/grader-consistency` | Flagged answer pairs that are equivalent but scored differently across graders — purely comparative, no AI-asserted "correct" score |
 | AI-Anchored Grading | #8 AI-Anchored Rubric Scoring | Rubric, model answer, student answers, optional one grader's scores | Score → `POST /api/grade` | Per-answer AI anchor score, delta vs the human score if given, sorted by biggest disagreement |
 
@@ -38,7 +38,7 @@ RLS: `own_rows_only` — `using (auth.uid() = user_id)` for `select`/`insert`. N
 |---|---|---|---|
 | `POST /api/analyze` | Signed-in session (cookie, via `@supabase/ssr`) | `{clos, exam, pastExams}` (strings) | `{clos: CLO[], questions: Question[], analysis: QuestionAnalysis[]}`; saves the run as a side effect |
 | `GET /api/runs` | Signed-in session (cookie, via `@supabase/ssr`) | — | `{runs: {id, created_at, result}[]}` |
-| `POST /api/overlap` | none | `{proposedSyllabus, existingSyllabi}` | `{overlaps: OverlapItem[], gaps: string[]}` |
+| `POST /api/overlap` | none | `{proposedSyllabus}` (existing courses come from the static `lib/courseCatalog.js`, not the request) | `{overlaps: OverlapItem[], gaps: string[]}` |
 | `POST /api/grader-consistency` | none | `{rubric, studentAnswers, graderScores}` | `{flags: ConsistencyFlag[]}` |
 | `POST /api/grade` | none | `{rubric, modelAnswer, studentAnswers, humanScores?}` | `{results: GradeResult[]}` |
 
@@ -60,7 +60,7 @@ GradeResult { answer, humanScore: number | null, aiScore, delta, reason }
 | 1 | Exam Quality Check | CLOs + draft exam + past exams → coverage gaps, recycled/duplicate questions, Bloom-level spread | `/api/analyze` | `<CoverageMatrix/>` (shares call w/ #5, #4) | yes → History |
 | 5 | CLO Coverage Matrix | Same input as #1 → matrix mapping each question to outcomes; blank row = untested CLO | `/api/analyze` | `<CoverageMatrix/>` | yes → History |
 | 4 | Question Bank Dedup & Tagging | Same input as #1 → per-question similarity vs past exams (match %, source year/question, reason) + topic/Bloom tags | `/api/analyze` | `<RecycledList/>`, `<TagChips/>` | yes → History |
-| 3 | Syllabus/Curriculum Overlap | Proposed syllabus + existing syllabi → overlap % per course + gap list | `/api/overlap` | `<OverlapReport/>` | no |
+| 3 | Syllabus/Curriculum Overlap | Proposed syllabus → overlap % per course + gap list, checked against the built-in course catalog | `/api/overlap` | `<OverlapReport/>` | no |
 | 2 | Multi-Grader Consistency | Rubric + student answers + 2+ graders' scores → flagged divergent-score pairs on equivalent answers | `/api/grader-consistency` | `<GraderConsistencyTable/>` | no |
 | 8 | AI-Anchored Rubric Scoring | Rubric + model answer + student answers + optional human score → AI anchor score + delta, sorted by disagreement | `/api/grade` | `<GradingTable/>` | no |
 

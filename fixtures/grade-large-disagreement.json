@@ -1,0 +1,6 @@
+{
+  "rubric": "Full credit for a correct time complexity with justification; half credit for a correct answer with no justification.",
+  "modelAnswer": "O(log n), because binary search halves the remaining search space on each comparison.",
+  "studentAnswers": "1. Logarithmic, no real reason given.\n2. O(n^2), because it compares every pair of elements.\n3. O(log n), because each comparison eliminates half of the remaining candidates.",
+  "humanScores": "1,10\n2,10\n3,4"
+}
