@@ -83,7 +83,7 @@ export default function ProfilePage() {
           <tbody>
             <tr>
               <td style={{ textAlign: 'left', fontFamily: 'var(--font-sans)', fontWeight: 700 }}>Email</td>
-              <td className="fz-match">{user?.email ?? (user ? 'demo (anonymous session)' : '—')}</td>
+              <td className="fz-match">{user?.email ?? '—'}</td>
             </tr>
             <tr>
               <td style={{ textAlign: 'left', fontFamily: 'var(--font-sans)', fontWeight: 700 }}>Status</td>

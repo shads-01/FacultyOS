@@ -37,21 +37,24 @@ export default function LoginPage() {
     }
   }
 
+  const DEMO_ACCOUNT = { email: 'demo@facultyos.app', password: 'demo1234' };
+
   async function handleDemoSignIn() {
     setError(null);
     setLoading(true);
     try {
       const supabase = getBrowserSupabase();
-      const { error: authError } = await supabase.auth.signInAnonymously();
-      if (authError) throw authError;
+      let { error: authError } = await supabase.auth.signInWithPassword(DEMO_ACCOUNT);
+      if (authError) {
+        // first run: the demo account doesn't exist yet — create it, then sign in
+        await supabase.auth.signUp(DEMO_ACCOUNT);
+        const { error: retryError } = await supabase.auth.signInWithPassword(DEMO_ACCOUNT);
+        if (retryError) throw retryError;
+      }
       router.push('/dashboard');
       router.refresh();
     } catch (err) {
-      setError(
-        err?.message?.includes('anonymous')
-          ? 'Demo sign-in is disabled on the Supabase project — enable "Allow anonymous sign-ins" in Authentication → Settings.'
-          : err?.message || 'An unexpected error occurred'
-      );
+      setError(err?.message || 'An unexpected error occurred');
       setLoading(false);
     }
   }
@@ -93,7 +96,7 @@ export default function LoginPage() {
             boxShadow: '4px 4px 0 #111', cursor: 'pointer', fontFamily: 'var(--font-sans)',
           }}
         >
-          Explore with a demo session →
+          Explore the demo account →
         </button>
         <Link href="/signup" style={{ fontSize: 13, color: '#111', fontWeight: 700 }}>
           Need an account? Sign up →
