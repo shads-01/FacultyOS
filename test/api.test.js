@@ -3,25 +3,46 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const { runFeature } = require('../src/lib/api');
 
-test('runFeature resolves the analyze mock in demo mode', async () => {
-  const result = await runFeature('analyze', {}, 'demo');
-  assert.ok(Array.isArray(result.clos));
-  assert.ok(Array.isArray(result.analysis));
+test('runFeature posts payload to /api/<screen> and returns json', async () => {
+  const originalFetch = global.fetch;
+  let calledUrl = '';
+  let calledOptions = null;
+  global.fetch = async (url, options) => {
+    calledUrl = url;
+    calledOptions = options;
+    return {
+      ok: true,
+      json: async () => ({ success: true, clos: ['CLO1'] }),
+    };
+  };
+
+  try {
+    const result = await runFeature('analyze', { test: 123 });
+    assert.strictEqual(calledUrl, '/api/analyze');
+    assert.strictEqual(calledOptions.method, 'POST');
+    assert.strictEqual(calledOptions.headers['content-type'], 'application/json');
+    assert.strictEqual(calledOptions.body, JSON.stringify({ test: 123 }));
+    assert.deepStrictEqual(result, { success: true, clos: ['CLO1'] });
+  } finally {
+    global.fetch = originalFetch;
+  }
 });
 
-test('runFeature routes each screen to its own mock', async () => {
-  const overlap = await runFeature('overlap', {}, 'demo');
-  assert.ok(Array.isArray(overlap.overlaps));
-  const consistency = await runFeature('grader-consistency', {}, 'demo');
-  assert.ok(Array.isArray(consistency.flags));
-  const grade = await runFeature('grade', {}, 'demo');
-  assert.ok(Array.isArray(grade.results));
+test('runFeature throws error when response is not ok', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: false,
+    status: 400,
+    json: async () => ({ error: 'Missing required field' }),
+  });
+
+  try {
+    await assert.rejects(
+      () => runFeature('analyze', {}),
+      /Missing required field/
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
 });
 
-test('runFeature throws in live mode (backend not wired yet)', async () => {
-  await assert.rejects(() => runFeature('analyze', {}, 'live'), /live mode not wired/);
-});
-
-test('runFeature rejects unknown screens', async () => {
-  await assert.rejects(() => runFeature('nope', {}, 'demo'), /unknown screen/);
-});

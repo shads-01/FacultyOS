@@ -1,27 +1,23 @@
-/* eslint-disable @typescript-eslint/no-require-imports -- CJS-compatible for node:test, bundled by Next */
-const mockResponses = require('../components/mockResponses');
+/**
+ * Frontend API client — calls the real backend routes.
+ * Each feature page already calls runFeature(screen, payload);
+ * this file is the only thing that needed to change.
+ */
 
-const MOCKS = {
-  analyze: () => mockResponses.analyzeResponse,
-  overlap: () => mockResponses.overlapResponse,
-  'grader-consistency': () => mockResponses.consistencyResponse,
-  grade: () => mockResponses.gradeResponse,
-};
-
-function isDemoMode() {
-  if (typeof window === 'undefined') return true;
-  return localStorage.getItem('fz-demo') !== 'off';
-}
-
-async function runFeature(screen, payload, mode) {
-  const resolvedMode = mode || (isDemoMode() ? 'demo' : 'live');
-  const mock = MOCKS[screen];
-  if (!mock) throw new Error(`unknown screen: ${screen}`);
-  if (resolvedMode !== 'demo') throw new Error('live mode not wired — backend routes pending');
-  await new Promise((r) => setTimeout(r, 400));
-  return mock();
+export async function runFeature(screen, payload) {
+  const res = await fetch(`/api/${screen}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || `API error ${res.status}`);
+  }
+  return res.json();
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { runFeature, isDemoMode };
+  module.exports = { runFeature };
 }
+

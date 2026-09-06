@@ -37,6 +37,28 @@ export default function LoginPage() {
     }
   }
 
+  const DEMO_ACCOUNT = { email: 'demo@facultyos.app', password: 'demo1234' };
+
+  async function handleDemoSignIn() {
+    setError(null);
+    setLoading(true);
+    try {
+      const supabase = getBrowserSupabase();
+      let { error: authError } = await supabase.auth.signInWithPassword(DEMO_ACCOUNT);
+      if (authError) {
+        // first run: the demo account doesn't exist yet — create it, then sign in
+        await supabase.auth.signUp(DEMO_ACCOUNT);
+        const { error: retryError } = await supabase.auth.signInWithPassword(DEMO_ACCOUNT);
+        if (retryError) throw retryError;
+      }
+      router.push('/dashboard');
+      router.refresh();
+    } catch (err) {
+      setError(err?.message || 'An unexpected error occurred');
+      setLoading(false);
+    }
+  }
+
   return (
     <div style={{ width: '100%', maxWidth: 420 }}>
       <h1 className="fz-display" style={{ fontSize: 40, marginBottom: 6 }}>Log in</h1>
@@ -61,7 +83,21 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <div style={{ marginTop: 22 }}>
+      <div style={{ marginTop: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <button
+          type="button"
+          onClick={handleDemoSignIn}
+          disabled={loading}
+          className="cursor-pointer"
+          style={{
+            border: '3px solid #111', background: '#FAF8F3', color: '#111',
+            padding: '11px 18px', minHeight: 44, fontSize: 12, fontWeight: 700,
+            textTransform: 'uppercase', letterSpacing: '0.05em',
+            boxShadow: '4px 4px 0 #111', cursor: 'pointer', fontFamily: 'var(--font-sans)',
+          }}
+        >
+          Explore the demo account →
+        </button>
         <Link href="/signup" style={{ fontSize: 13, color: '#111', fontWeight: 700 }}>
           Need an account? Sign up →
         </Link>
