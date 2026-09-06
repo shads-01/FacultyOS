@@ -1,6 +1,50 @@
 import { parseCLOs, parseNumberedQuestions, parsePastExams, buildPrompt, parseModelJSON } from '../../../../lib/analyze.js';
 import { requireUser } from '../../../../lib/supabase/serverClient.js';
 
+async function callModelWithRetry(prompt, apiKey, maxRetries = 2) {
+  let lastError = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const geminiRes = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 },
+          }),
+        },
+      );
+
+      if (geminiRes.ok) {
+        const data = await geminiRes.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return { rawText, error: null, status: 200 };
+      }
+
+      const errText = await geminiRes.text();
+      // Retry ONLY on 5xx server errors (not on 4xx client errors)
+      if (geminiRes.status >= 500 && attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 500 : 1000));
+        continue;
+      }
+
+      return { rawText: null, error: `Gemini API error: ${errText}`, status: 502 };
+    } catch (e) {
+      lastError = e;
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 500 : 1000));
+        continue;
+      }
+    }
+  }
+  return { rawText: null, error: `Gemini API request failed: ${lastError?.message || 'Unknown network error'}`, status: 502 };
+}
+
 export async function POST(req) {
   const { user, supabase, error: authError } = await requireUser(req);
   if (!user) {
@@ -32,33 +76,10 @@ export async function POST(req) {
     return Response.json({ error: 'GEMINI_API_KEY not configured' }, { status: 500 });
   }
 
-  let geminiRes;
-  try {
-    geminiRes = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
-      {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4096 },
-        }),
-      },
-    );
-  } catch (e) {
-    return Response.json({ error: `Gemini API request failed: ${e.message}` }, { status: 502 });
+  const { rawText, error: modelError, status: modelStatus } = await callModelWithRetry(prompt, apiKey);
+  if (modelError) {
+    return Response.json({ error: modelError }, { status: modelStatus || 502 });
   }
-
-  if (!geminiRes.ok) {
-    const errText = await geminiRes.text();
-    return Response.json({ error: `Gemini API error: ${errText}` }, { status: 502 });
-  }
-
-  const data = await geminiRes.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
   let parsed;
   try {
