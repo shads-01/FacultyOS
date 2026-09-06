@@ -2,40 +2,45 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the shared Next.js + Supabase scaffold and the anonymous-auth-backed `/api/analyze` + `/api/runs` flow — Features #1/#5/#4 (Exam Quality Check, CLO Coverage Matrix, Dedup & Tagging) and #6 (Run History) — matching `plan.md`'s Frozen Contract exactly.
+**Goal:** Build the shared Next.js + Supabase scaffold and the real-auth-backed `/api/analyze` + `/api/runs` flow — Features #1/#5/#4 (Exam Quality Check, CLO Coverage Matrix, Dedup & Tagging) and #6 (Run History) — matching `plan.md`'s Frozen Contract exactly.
 
-**Architecture:** Next.js App Router route handlers. Anonymous Supabase auth only: the frontend calls `supabase.auth.signInAnonymously()` once and sends `Authorization: Bearer <access_token>` on every request; each route handler verifies that token itself (no cookies, no `@supabase/ssr`, no login pages, no middleware-based redirects) and uses a per-request Supabase client that forwards the same bearer token to PostgREST, so `auth.uid()` resolves correctly under RLS. Exactly one Anthropic call per analyze request. Pure parsing/prompt/response-parsing logic lives in CommonJS files unit-tested with `node:test`; route handlers import them with ESM `import` (Next's bundler resolves CJS named exports via `cjs-module-lexer`).
+> **Reversed 2026-09-06:** this plan originally used anonymous Supabase auth (bearer-token verification, no login pages). `plan.md`'s Auth decision flipped back to **real email+password auth** — see `context.md`'s "Auth" section. Tasks 1, 4, 5, 6, 7 below are rewritten for that; Tasks 0, 2, 3 (scaffold, parsers, prompt builder) are auth-agnostic and unchanged.
 
-**Tech Stack:** Next.js (App Router) + Tailwind + shadcn/ui scaffold, Supabase (Postgres + anonymous Auth + RLS), `@supabase/supabase-js` only (no `@supabase/ssr` — there is no cookie session to manage), Vercel deploy, `node:test`, native `fetch` for the Anthropic call. Model id `claude-sonnet-5`.
+**Architecture:** Next.js App Router route handlers. Real Supabase email+password auth via `@supabase/ssr`: faculty sign in/up on `/login`/`/signup`, the session lives in an HTTP-only cookie, `middleware.js` refreshes that cookie every request and redirects signed-out visitors to `/login`. Route handlers read the session server-side via `getServerSupabase()` (no bearer token, no manual JWT verification) and use that same session-scoped client for all Postgres access, so `auth.uid()` resolves correctly under RLS. Exactly one Gemini call per analyze request. Pure parsing/prompt/response-parsing logic lives in CommonJS files unit-tested with `node:test`; route handlers import them with ESM `import` (Next's bundler resolves CJS named exports via `cjs-module-lexer`).
+
+**Tech Stack:** Next.js (App Router) + Tailwind + shadcn/ui scaffold, Supabase (Postgres + email/password Auth + RLS), `@supabase/ssr` + `@supabase/supabase-js`, Vercel deploy, `node:test`, native `fetch` for the Gemini call (see `context.md`'s "LLM provider" section — every Anthropic sample below is dead code, write Gemini directly). Model id `gemini-2.5-flash`.
 
 **Spec:** `plan.md` and `DESIGN.md` at the project root, plus this plan.
 
 ## Global Constraints
 
-- Anonymous Supabase auth only. `supabase.auth.signInAnonymously()` fires client-side once (Shads' code); every `/api/analyze` and `/api/runs` request carries `Authorization: Bearer <access_token>`. No login/signup pages, no email/password, no `@supabase/ssr`, no cookie session, no middleware-based redirects. This supersedes the real-email-auth design in the older, now-stale `2026-09-06-faculty-os-backend.md`.
-- Must enable "Allow anonymous sign-ins" in the Supabase dashboard (Authentication → Settings) — it is off by default and `signInAnonymously()` fails silently against a fresh project otherwise.
-- Exactly one Anthropic call per analyze request. Model id `claude-sonnet-5`. No embeddings, no vector search, no multi-call orchestration.
-- RLS is the only trust boundary: `own_rows_only` policy, `auth.uid() = user_id`, `select`/`insert` only — no `update`/`delete` (immutable history).
-- Never use `SUPABASE_SERVICE_ROLE_KEY` in app code, even though it's a provisioned env var in `plan.md` — the anon key plus the per-request bearer token is the correct and sufficient boundary.
-- Zero added npm dependencies beyond the Next.js/Tailwind/shadcn scaffold and `@supabase/supabase-js`. No test framework beyond `node:test`, no Anthropic SDK.
+- Real Supabase email+password auth via `@supabase/ssr`. Faculty sign up/log in on `/login`/`/signup`; the session lives in a cookie managed by `@supabase/ssr`'s `createBrowserClient`/`createServerClient`; `middleware.js` refreshes that cookie on every request and redirects signed-out visitors to `/login` (and signed-in visitors away from `/login`/`/signup`). No bearer tokens, no manual JWT verification in route handlers — `getServerSupabase()` reads the cookie session directly. This reinstates `Backend_Plan.md`'s original design; see `context.md`'s "Auth" section for why the anonymous-auth version of this plan was reverted.
+- In the Supabase dashboard: **Authentication → Providers → Email → turn off "Confirm email"** — without this, `signUp` leaves the user unconfirmed and unable to use the session immediately, which the demo can't afford. (No "enable anonymous sign-ins" toggle needed — that was the reverted design.)
+- Exactly one Gemini call per analyze request. Model id `gemini-2.5-flash`. No embeddings, no vector search, no multi-call orchestration.
+- RLS is the only trust boundary underneath the session: `own_rows_only` policy, `auth.uid() = user_id`, `select`/`insert` only — no `update`/`delete` (immutable history).
+- Never use `SUPABASE_SERVICE_ROLE_KEY` in app code, even though it's a provisioned env var in `plan.md` — the cookie session plus RLS is the correct and sufficient boundary.
+- Zero added npm dependencies beyond the Next.js/Tailwind/shadcn scaffold, `@supabase/supabase-js`, and `@supabase/ssr`. No test framework beyond `node:test`, no LLM SDK (native `fetch` to Gemini).
 - Text-paste input only. No file upload.
-- File ownership — you touch **only**: `app/api/analyze/**`, `app/api/runs/**`, `supabase/**`, `lib/types.ts`, `lib/analyze.js`, `lib/supabase/**`, `scripts/smoke-test.mjs`, and (Task 0 only, if you're the one who runs it) the scaffold's `package.json`/`next.config.js`/Tailwind+shadcn config. **Never touch `app/page.js` or `app/layout.js` after Task 0** — those are Shads' from the moment the scaffold lands (her Task 1 replaces both). Never touch `app/(app)/**`, `components/**` (Shads), or `app/api/overlap/**`, `app/api/grader-consistency/**`, `app/api/grade/**`, `fixtures/**` (Hrittika).
+- File ownership — you touch **only**: `src/app/api/analyze/**`, `src/app/api/runs/**`, `src/app/(auth)/**` (login/signup), `src/middleware.js`, `supabase/**`, `lib/types.ts`, `lib/analyze.js`, `lib/supabase/client.js`, `lib/supabase/server.js`, `scripts/smoke-test.mjs`, and (Task 0 only, if you're the one who runs it) the scaffold's `package.json`/`next.config.js`/Tailwind+shadcn config. **Never touch `src/app/page.js` or `src/app/layout.tsx` after Task 0** — those are Shads' from the moment the scaffold lands (his Task 1 touches the redirect only). Never touch `src/app/(app)/**`, `src/components/**` (Shads), or `src/app/api/overlap/**`, `src/app/api/grader-consistency/**`, `src/app/api/grade/**`, `fixtures/**` (Hrittika).
 - Deploy checkpoint: a live URL must exist by the end of Task 1, before any feature logic is written.
-- **middleware.js is intentionally not created by this plan.** Anonymous auth needs no page-level redirects (there's nothing to sign in *to* — every visitor is already "signed in" once the client-side anonymous call succeeds), and API auth is a per-route bearer-token check, not a middleware concern. `plan.md` lists `middleware.js` as an Arko-owned file only for the scenario where the 3 secondary routes later need auth-gating added — if that happens, it's a new small task, not a retrofit of this one.
+- **`src/middleware.js` is now required** (reversing this plan's earlier "intentionally not created" call) — real auth needs page-level redirects for signed-out visitors, which anonymous auth never did. Note the `src/` layout puts it at `src/middleware.js`, not repo root (`context.md`'s deviation note).
 
 ---
 
 ## File Structure
 
-- `package.json`, `next.config.js`, `app/layout.js`, `app/page.js` — Next.js/Tailwind/shadcn scaffold output, committed as-is (Shads' plan replaces the page content; you only ship the stock scaffold).
+- `package.json`, `next.config.js`, `src/app/layout.tsx`, `src/app/page.tsx` — Next.js/Tailwind/shadcn scaffold output, committed as-is (Shads' plan touches the redirect/fonts; you only ship the stock scaffold).
 - `lib/types.ts` — shared TypeScript types matching the Frozen Contract (`CLO`, `Question`, `QuestionAnalysis`, `SimilarityMatch`, `AnalysisResult`). Read-only reference for Shads/Hrittika — per `plan.md`'s shared-file-risk note, they keep their own local copies rather than importing it, so this file has exactly one owner: you.
 - `lib/analyze.js` — pure functions: `parseCLOs`, `parseNumberedQuestions`, `parsePastExams`, `buildPrompt`, `parseModelJSON`. CommonJS, unit-tested directly.
-- `lib/supabase/serverClient.js` — `parseAuthHeader(headerValue)` (pure, unit-tested) and `requireUser(req)` (thin glue: verifies the bearer token via `supabase.auth.getUser`, returns a request-scoped client that forwards that token to PostgREST for RLS).
+- `lib/supabase/client.js` — `getBrowserSupabase()`, the `@supabase/ssr` browser client (cookie-aware). Used by the login/signup pages.
+- `lib/supabase/server.js` — `getServerSupabase()`, the `@supabase/ssr` server client for Route Handlers (reads/writes the session cookie via `next/headers`). Thin glue over one external call, not unit-tested — verified in Task 7.
+- `src/middleware.js` — refreshes the session cookie every request; redirects signed-out visitors to `/login`, signed-in visitors away from `/login`/`/signup`.
+- `src/app/(auth)/login/page.js`, `src/app/(auth)/signup/page.js` — email+password forms.
 - `supabase/migrations/0001_init.sql` — `analysis_runs` table + RLS policies.
-- `app/api/analyze/route.js` — `POST`: parse inputs, call Anthropic, insert the run, return the result.
-- `app/api/runs/route.js` — `GET`: list the caller's own runs (RLS-scoped).
-- `test/analyze.test.js`, `test/auth.test.js` — `node:test` suites.
-- `scripts/smoke-test.mjs` — end-to-end verification script against a deployed URL; self-contained, needs no UI.
+- `src/app/api/analyze/route.js` — `POST`: parse inputs, call Gemini, insert the run, return the result.
+- `src/app/api/runs/route.js` — `GET`: list the caller's own runs (RLS-scoped).
+- `test/analyze.test.js` — `node:test` suite (parsers/prompt/parse only — the SSR clients and middleware are thin glue, verified manually per Task 7).
+- `scripts/smoke-test.mjs` — **not used for auth verification** (cookie sessions don't script cleanly with bare `fetch`, see Task 7) — kept only if you still want an unauthenticated smoke check of something stateless; Task 7's real verification is manual, in-browser.
 
 ---
 
@@ -133,7 +138,7 @@ npx supabase link --project-ref <your-project-ref>
 npx supabase db push
 ```
 
-Then in the Supabase dashboard: **Authentication → Settings → Enable anonymous sign-ins** (toggle on — it's off by default). Expected: `analysis_runs` exists in the Table Editor with RLS enabled, and anonymous sign-ins are allowed.
+Expected: `analysis_runs` exists in the Table Editor with RLS enabled. Email+password auth is on by default — nothing to toggle here; Task 4 turns off email confirmation so the demo doesn't need an email round-trip.
 
 - [ ] **Step 4: Deploy the skeleton to Vercel**
 
@@ -414,95 +419,211 @@ git commit -m "feat: add prompt builder and model-response parser"
 
 ---
 
-### Task 4: Bearer-token auth helper
+### Task 4: Faculty auth — Supabase SSR clients, middleware, login/signup
 
 **Files:**
-- Create: `lib/supabase/serverClient.js`
-- Create: `test/auth.test.js`
+- Create: `lib/supabase/client.js`
+- Create: `lib/supabase/server.js`
+- Create: `src/middleware.js`
+- Create: `src/app/(auth)/login/page.js`
+- Create: `src/app/(auth)/signup/page.js`
 
 **Interfaces:**
-- Produces: `parseAuthHeader(headerValue) -> string | null` (pure, unit-tested), `requireUser(req) -> Promise<{user, supabase, error}>` (thin glue over `@supabase/supabase-js` — not unit tested, verified in Task 7). Consumed by Task 5 and Task 6.
+- Produces: `getBrowserSupabase() -> SupabaseClient` (browser, cookie-aware), `getServerSupabase() -> Promise<SupabaseClient>` (server, reads/writes cookies via `next/headers`) — consumed by Task 5/6's route handlers.
 
-- [ ] **Step 1: Write the failing tests for the pure part**
+This task is thin glue over `@supabase/ssr` (session cookie handling, auth redirects, two plain HTML forms) — no pure logic to TDD here, same reasoning `Backend_Plan.md` gives for its equivalent task. Verified manually in Task 7, not unit tested.
 
-`test/auth.test.js`:
-```js
-const { test } = require('node:test');
-const assert = require('node:assert');
-const { parseAuthHeader } = require('../lib/supabase/serverClient');
-
-test('parseAuthHeader extracts the token from a Bearer header', () => {
-  assert.strictEqual(parseAuthHeader('Bearer abc123'), 'abc123');
-});
-
-test('parseAuthHeader is case-insensitive on the Bearer keyword', () => {
-  assert.strictEqual(parseAuthHeader('bearer xyz'), 'xyz');
-});
-
-test('parseAuthHeader returns null for a missing or malformed header', () => {
-  assert.strictEqual(parseAuthHeader(null), null);
-  assert.strictEqual(parseAuthHeader(undefined), null);
-  assert.strictEqual(parseAuthHeader('Basic abc123'), null);
-});
-```
-
-- [ ] **Step 2: Run tests to verify they fail**
-
-Run: `node --test test/`
-Expected: FAIL — `Cannot find module '../lib/supabase/serverClient'`
-
-- [ ] **Step 3: Write the implementation**
+- [ ] **Step 1: Install the Supabase SSR client**
 
 ```bash
-npm install @supabase/supabase-js
+npm install @supabase/ssr
 ```
+(`@supabase/supabase-js` is already a dependency.) `ponytail:` `@supabase/ssr` is the one dependency worth adding here — hand-rolling cookie-based session refresh for the App Router would be far more code, and far easier to get wrong on a trust boundary, than using Supabase's own SSR helper.
 
-`lib/supabase/serverClient.js`:
+- [ ] **Step 2: Browser client**
+
+`lib/supabase/client.js`:
 ```js
-const { createClient } = require('@supabase/supabase-js');
+import { createBrowserClient } from '@supabase/ssr';
 
-function parseAuthHeader(headerValue) {
-  if (!headerValue) return null;
-  const match = headerValue.match(/^Bearer\s+(.+)$/i);
-  return match ? match[1].trim() : null;
-}
-
-async function requireUser(req) {
-  const token = parseAuthHeader(req.headers.get('authorization'));
-  if (!token) {
-    return { user: null, supabase: null, error: 'Missing Authorization: Bearer token' };
-  }
-
-  // This client forwards the caller's own access token to PostgREST (not the anon
-  // key alone), so auth.uid() resolves to this user inside RLS policies.
-  const supabase = createClient(
+export function getBrowserSupabase() {
+  return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    { global: { headers: { Authorization: `Bearer ${token}` } } },
   );
-
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) {
-    return { user: null, supabase: null, error: error?.message || 'Invalid session' };
-  }
-  return { user: data.user, supabase, error: null };
 }
-
-module.exports = { parseAuthHeader, requireUser };
 ```
 
-`ponytail:` `requireUser` is thin glue over one external verification call — mocking `@supabase/supabase-js` purely to unit-test it isn't proportionate for a 4.5h build. Verified for real in Task 7's smoke test.
+- [ ] **Step 3: Server client**
 
-- [ ] **Step 4: Run tests to verify they pass**
+`lib/supabase/server.js`:
+```js
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
-Run: `node --test test/`
-Expected: PASS (3 tests; 13 total)
+export async function getServerSupabase() {
+  const cookieStore = await cookies();
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+          } catch {
+            // called from a Server Component render path — middleware.js refreshes the session instead
+          }
+        },
+      },
+    },
+  );
+}
+```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Middleware — refresh session, protect app routes**
+
+`src/middleware.js` (inside `src/` because this scaffold uses the `src/` layout — `context.md`'s deviation note):
+```js
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse } from 'next/server';
+
+export async function middleware(request) {
+  let response = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        },
+      },
+    },
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/signup');
+  if (!user && !isAuthRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+  if (user && isAuthRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
+    return NextResponse.redirect(url);
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/).*)'],
+};
+```
+
+- [ ] **Step 5: Login page**
+
+`src/app/(auth)/login/page.js`:
+```jsx
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getBrowserSupabase } from '../../../../lib/supabase/client';
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const router = useRouter();
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+    const supabase = getBrowserSupabase();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    router.push('/');
+    router.refresh();
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h1>Faculty Login</h1>
+      <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+      <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
+      {error && <p role="alert">{error}</p>}
+      <button type="submit">Log in</button>
+      <a href="/signup">Need an account? Sign up</a>
+    </form>
+  );
+}
+```
+
+- [ ] **Step 6: Signup page**
+
+`src/app/(auth)/signup/page.js`:
+```jsx
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { getBrowserSupabase } from '../../../../lib/supabase/client';
+
+export default function SignupPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const router = useRouter();
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+    const supabase = getBrowserSupabase();
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    router.push('/');
+    router.refresh();
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h1>Faculty Sign Up</h1>
+      <label>Email<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
+      <label>Password<input type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
+      {error && <p role="alert">{error}</p>}
+      <button type="submit">Sign up</button>
+      <a href="/login">Already have an account? Log in</a>
+    </form>
+  );
+}
+```
+
+- [ ] **Step 7: Disable email confirmation for the demo**
+
+Supabase dashboard → Authentication → Providers → Email → turn off "Confirm email". Without this, `signUp` leaves the user unconfirmed and unable to use the session immediately — the wow-moment demo can't afford an email round-trip. `ponytail:` no password-reset flow, no profile page, no email verification — cut list; add if the live demo actually needs one.
+
+- [ ] **Step 8: Commit**
 
 ```bash
-git add lib/supabase/serverClient.js test/auth.test.js package.json package-lock.json
-git commit -m "feat: add bearer-token auth helper"
+git add -A
+git commit -m "feat: real faculty auth (Supabase SSR, email+password, login/signup, middleware)"
 ```
 
 ---
@@ -510,23 +631,24 @@ git commit -m "feat: add bearer-token auth helper"
 ### Task 5: `/api/analyze` route handler
 
 **Files:**
-- Create: `app/api/analyze/route.js`
+- Create: `src/app/api/analyze/route.js`
 
 **Interfaces:**
-- Consumes: `lib/analyze.js` (Tasks 2-3), `lib/supabase/serverClient.js` (Task 4).
-- Produces: `POST /api/analyze` — header `Authorization: Bearer <token>`, body `{clos, exam, pastExams}` (strings), response `{clos, questions, analysis}` on 200, `{error}` on 4xx/5xx. Saves the run as a side effect. Matches `plan.md`'s Frozen Contract.
+- Consumes: `lib/analyze.js` (Tasks 2-3), `lib/supabase/server.js` (Task 4).
+- Produces: `POST /api/analyze` — no header needed, session read from cookies automatically, body `{clos, exam, pastExams}` (strings), response `{clos, questions, analysis}` on 200, `{error}` on 4xx/5xx. Saves the run as a side effect. Matches `plan.md`'s Frozen Contract.
 
 - [ ] **Step 1: Write the handler**
 
-`app/api/analyze/route.js`:
+`src/app/api/analyze/route.js`:
 ```js
-import { parseCLOs, parseNumberedQuestions, parsePastExams, buildPrompt, parseModelJSON } from '../../../lib/analyze';
-import { requireUser } from '../../../lib/supabase/serverClient';
+import { parseCLOs, parseNumberedQuestions, parsePastExams, buildPrompt, parseModelJSON } from '../../../../lib/analyze';
+import { getServerSupabase } from '../../../../lib/supabase/server';
 
 export async function POST(req) {
-  const { user, supabase, error: authError } = await requireUser(req);
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return Response.json({ error: authError }, { status: 401 });
+    return Response.json({ error: 'Not signed in' }, { status: 401 });
   }
 
   const { clos = '', exam = '', pastExams = '' } = await req.json();
@@ -594,12 +716,12 @@ export async function POST(req) {
 
 - [ ] **Step 2: Manual verification (deferred to Task 7)**
 
-`ponytail:` this file is thin glue over already-tested pure functions plus two external calls (Anthropic, Supabase) — mocking both purely to unit-test glue code isn't proportionate here. Verified for real in Task 7 against the deployed endpoint.
+`ponytail:` this file is thin glue over already-tested pure functions plus two external calls (Gemini, Supabase) — mocking both purely to unit-test glue code isn't proportionate here. Verified for real in Task 7 against the deployed endpoint.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add app/api/analyze/route.js
+git add src/app/api/analyze/route.js
 git commit -m "feat: add POST /api/analyze route handler"
 ```
 
@@ -608,24 +730,28 @@ git commit -m "feat: add POST /api/analyze route handler"
 ### Task 6: `/api/runs` route handler
 
 **Files:**
-- Create: `app/api/runs/route.js`
+- Create: `src/app/api/runs/route.js`
 
 **Interfaces:**
-- Consumes: `lib/supabase/serverClient.js` (Task 4).
-- Produces: `GET /api/runs` — header `Authorization: Bearer <token>`, response `{runs: {id, created_at, result}[]}`, RLS-scoped to the caller's own rows.
+- Consumes: `lib/supabase/server.js` (Task 4).
+- Produces: `GET /api/runs` — no header needed, session read from cookies, response `{runs: {id, created_at, result}[]}`, RLS-scoped to the caller's own rows.
 
 - [ ] **Step 1: Write the handler**
 
-`app/api/runs/route.js`:
+`src/app/api/runs/route.js`:
 ```js
-import { requireUser } from '../../../lib/supabase/serverClient';
+import { getServerSupabase } from '../../../../lib/supabase/server';
 
-export async function GET(req) {
-  const { user, supabase, error: authError } = await requireUser(req);
+export async function GET() {
+  const supabase = await getServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return Response.json({ error: authError }, { status: 401 });
+    return Response.json({ error: 'Not signed in' }, { status: 401 });
   }
 
+  // ponytail: no explicit .eq('user_id', user.id) filter here — RLS (auth.uid() = user_id)
+  // already restricts every row this connection can see, so re-filtering client-side would
+  // be redundant, not defense-in-depth. RLS is the actual trust boundary.
   const { data, error } = await supabase
     .from('analysis_runs')
     .select('id, created_at, result')
@@ -641,93 +767,61 @@ export async function GET(req) {
 - [ ] **Step 2: Commit**
 
 ```bash
-git add app/api/runs/route.js
+git add src/app/api/runs/route.js
 git commit -m "feat: add GET /api/runs route handler"
 ```
 
 ---
 
-### Task 7: Deploy + end-to-end smoke test
+### Task 7: Deploy + end-to-end manual verification
 
-**Files:**
-- Create: `scripts/smoke-test.mjs`
+**Files:** none (verification-only task).
 
 **Interfaces:**
-- Consumes: the full backend (Tasks 0-6), deployed. Self-contained — does not require Shads' UI or Hrittika's routes to exist.
+- Consumes: the full backend (Tasks 0-6), deployed. Self-contained — does not require Shads' UI or Hrittika's routes to exist, beyond using the browser to reach `/login`.
 
-- [ ] **Step 1: Write the smoke-test script**
+`ponytail:` real cookie-based sessions behind `src/middleware.js` are awkward to script with bare `fetch`/`curl` (cookie jar + Next's specific cookie names) for marginal benefit over just using the browser — the anonymous-auth version of this plan used a scripted smoke test with `signInAnonymously()`; that no longer applies now that signing in requires a real account. Verified manually instead, same as `Backend_Plan.md`'s equivalent step.
 
-`scripts/smoke-test.mjs`:
-```js
-import { createClient } from '@supabase/supabase-js';
-
-const BASE_URL = process.env.SMOKE_TEST_URL;
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!BASE_URL || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('Usage: SMOKE_TEST_URL=... NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=... node scripts/smoke-test.mjs');
-  process.exit(1);
-}
-
-async function signInAnon() {
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const { data, error } = await supabase.auth.signInAnonymously();
-  if (error) throw new Error(`signInAnonymously failed: ${error.message}`);
-  return data.session.access_token;
-}
-
-async function main() {
-  const tokenA = await signInAnon();
-
-  const analyzeRes = await fetch(`${BASE_URL}/api/analyze`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${tokenA}` },
-    body: JSON.stringify({
-      clos: 'CLO1: Explain Big-O time complexity\nCLO2: Implement recursive algorithms\nCLO3: Analyze sorting algorithm tradeoffs\nCLO4: Design a hash table from scratch',
-      exam: '1. What is the time complexity of binary search, and why?\n2. Write a recursive function to compute the nth Fibonacci number.\n3. Compare the average-case and worst-case time complexity of quicksort vs mergesort.',
-      pastExams: '2024\n1. Write a recursive function that returns the nth Fibonacci number using memoization.',
-    }),
-  });
-  const analyzeData = await analyzeRes.json();
-  if (!analyzeRes.ok) throw new Error(`POST /api/analyze failed: ${JSON.stringify(analyzeData)}`);
-  console.log('POST /api/analyze OK —', analyzeData.analysis.length, 'questions analyzed');
-
-  const runsRes = await fetch(`${BASE_URL}/api/runs`, { headers: { authorization: `Bearer ${tokenA}` } });
-  const runsData = await runsRes.json();
-  if (!runsRes.ok) throw new Error(`GET /api/runs failed: ${JSON.stringify(runsData)}`);
-  if (runsData.runs.length < 1) throw new Error('Expected at least 1 run for session A, got 0');
-  console.log('GET /api/runs OK —', runsData.runs.length, 'run(s) for session A');
-
-  const tokenB = await signInAnon();
-  const runsResB = await fetch(`${BASE_URL}/api/runs`, { headers: { authorization: `Bearer ${tokenB}` } });
-  const runsDataB = await runsResB.json();
-  if (runsDataB.runs.length !== 0) {
-    throw new Error(`Expected 0 runs for a brand-new session B, got ${runsDataB.runs.length} — RLS isolation broken`);
-  }
-  console.log('RLS isolation OK — session B sees 0 runs');
-
-  console.log('\nAll smoke tests passed.');
-}
-
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
-```
-
-- [ ] **Step 2: Redeploy and run it**
+- [ ] **Step 1: Redeploy**
 
 ```bash
 npx vercel --prod --yes
-SMOKE_TEST_URL=https://<your-deployment>.vercel.app node scripts/smoke-test.mjs
 ```
 
-Expected output ends with `All smoke tests passed.` This is also the exact data that produces the wow-moment flags (CLO4 untested, Q2 ≥80% match to 2024 Q1) once Shads' UI renders it.
+- [ ] **Step 2: Manual end-to-end check against the deployed URL**
+
+1. Open the deployed URL in an incognito window → confirm it redirects to `/login`.
+2. Click through to `/signup`, create a test faculty account (e.g. `demo1@test.edu` / a 6+ char password) → confirm it redirects to `/` signed in (no email-confirmation wait, since Task 4 Step 7 disabled that).
+3. Paste this exact demo data (engineered to trigger both wow-moment flags) and click Analyze:
+
+CLOs:
+```
+CLO1: Explain Big-O time complexity
+CLO2: Implement recursive algorithms
+CLO3: Analyze sorting algorithm tradeoffs
+CLO4: Design a hash table from scratch
+```
+
+Draft Exam (this year):
+```
+1. What is the time complexity of binary search, and why?
+2. Write a recursive function to compute the nth Fibonacci number.
+3. Compare the average-case and worst-case time complexity of quicksort vs mergesort.
+```
+
+Past Exams:
+```
+2024
+1. Write a recursive function that returns the nth Fibonacci number using memoization.
+```
+
+Expected: **CLO4 highlighted red ("— not tested")** and **Q2 shown with a ≥80% match to 2024 Q1**.
+
+4. Open a second incognito window, sign up a second test account (`demo2@test.edu`) → confirm its History panel is empty (RLS isolation — this account cannot see `demo1`'s run).
+5. Log back in as `demo1` → confirm the earlier run is still in History and reloads without calling the model again.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add scripts/smoke-test.mjs
-git commit -m "test: add end-to-end smoke test script for analyze+runs"
+git commit -m "chore: verify backend end-to-end against deployed URL" --allow-empty
 ```

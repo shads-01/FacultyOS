@@ -6,12 +6,12 @@ Instructions for any coding agent (Claude Code, Antigravity, Codex, Cursor, or o
 
 ## What this repo is
 
-Faculty OS: a hackathon app (3-person team, 5.5h build). Faculty paste CLOs/exam/rubrics/syllabi text and get back AI-generated audit reports across 4 screens. Full spec: `plan.md` + `DESIGN.md`. Tech stack + the Gemini-provider decision: `Master_Tasklist.md`. Per-person execution plans: `Arko_Plan.md`, `Shads_Plan.md`, `Hrittika_Plan.md`. `Backend_Plan.md` is superseded — never execute it.
+Faculty OS: a hackathon app (3-person team, 5.5h build). Faculty paste CLOs/exam/rubrics/syllabi text and get back AI-generated audit reports across 4 screens. Full spec: `plan.md` + `DESIGN.md`. Tech stack + the Gemini-provider decision: `Master_Tasklist.md`. Per-person execution plans: `Arko_Plan.md`, `Shads_Plan.md`, `Hrittika_Plan.md`. `Backend_Plan.md` was superseded, then **reinstated 2026-09-06** for its auth design (real email+password) — see `context.md`'s "Auth" section and source-of-truth hierarchy before assuming it's dead.
 
 ## Stack & commands
 
 - Next.js 16 (App Router, `src/` layout), React 19, TypeScript + plain JS/JSX mixed (both are fine — see `context.md`'s deviation note), Tailwind 4, shadcn/ui ("New York" style).
-- Supabase: Postgres + anonymous Auth (`@supabase/supabase-js` only — no `@supabase/ssr`, no cookies, no login pages). RLS is the only trust boundary.
+- Supabase: Postgres + real email/password Auth (`@supabase/ssr`, cookie-based session, `middleware.js`, login/signup pages) — reinstated 2026-09-06, see `context.md`'s "Auth" section. RLS is still the trust boundary underneath the session.
 - LLM: **Google Gemini** (`gemini-2.5-flash`) via native `fetch` — no SDK. Not Anthropic; see `context.md`'s "LLM provider" section before writing any route handler.
 - Tests: Node's built-in `node:test` for pure logic (`node --test test/`) — no Jest/Vitest, zero test-framework dependencies.
 - Deploy: Vercel, zero-config.
@@ -31,7 +31,7 @@ Three people build in parallel on deliberately disjoint files. An agent picking 
 
 | Owner | Files (repo-root-relative unless noted) |
 |---|---|
-| Arko | `src/app/api/analyze/**`, `src/app/api/runs/**`, `supabase/**`, `lib/types.ts`, `lib/analyze.js`, `lib/supabase/serverClient.js`, `scripts/smoke-test.mjs`, `test/analyze.test.js`, `test/auth.test.js` |
+| Arko | `src/app/api/analyze/**`, `src/app/api/runs/**`, `src/app/(auth)/**` (login/signup), `src/middleware.js`, `supabase/**`, `lib/types.ts`, `lib/analyze.js`, `lib/supabase/client.js`, `lib/supabase/server.js`, `scripts/smoke-test.mjs`, `test/analyze.test.js`, `test/auth.test.js` |
 | Shads | `src/app/page.js` (root redirect only, once, at his Task 1), `src/app/layout.tsx` (font/tokens only), `src/app/(app)/**`, `src/components/**` (excluding `src/components/ui/**`, which is shadcn's own output — leave that alone) |
 | Hrittika | `src/app/api/overlap/route.js`, `src/app/api/grader-consistency/route.js`, `src/app/api/grade/route.js`, `lib/overlap.js`, `lib/graderConsistency.js`, `lib/grade.js`, `fixtures/**`, `test/overlap.test.js`, `test/graderConsistency.test.js`, `test/grade.test.js` |
 

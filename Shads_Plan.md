@@ -6,15 +6,15 @@
 
 **Architecture:** Next.js App Router pages under `app/(app)/**`, one per screen, each a client component using `useState`/`useEffect` only (no state library). Every screen is built and demoable against a local mock-response module first; swapping to the real route is a one-line `fetch` URL change per screen, done last (Task 9), once the backend is deployed. Report-rendering logic (coverage matrix, recycled list, Bloom distribution) is your own copy of pure functions — not imported from Arko's `lib/`, per `plan.md`'s shared-file-risk fix, so you never wait on his commits.
 
-**Tech Stack:** Next.js (App Router), Tailwind, shadcn/ui ("New York" style per `DESIGN.md`), GSAP (for the one wow-moment reveal only), Plus Jakarta Sans font, `@supabase/supabase-js` (anonymous sign-in only, no `@supabase/ssr`).
+**Tech Stack:** Next.js (App Router), Tailwind, shadcn/ui ("New York" style per `DESIGN.md`), GSAP (for the one wow-moment reveal only), Plus Jakarta Sans font. No Supabase client dependency needed in this plan at all — real auth (`@supabase/ssr`) is entirely Arko's files (login/signup pages, middleware); your pages just call `fetch` and the browser sends the session cookie automatically, same-origin. *(Reversed 2026-09-06 from an earlier anonymous-auth design that had you calling `signInAnonymously()` client-side — see `context.md`'s "Auth" section.)*
 
 **Spec:** `plan.md` and `DESIGN.md` at the project root, plus this plan.
 
 ## Global Constraints
 
-- File ownership — you touch **only**: `app/page.js` (root redirect, replacing the scaffold default — coordinate with Arko: he ships the stock scaffold in his Task 1 and never edits `app/page.js` again), `app/(app)/**`, `components/**`. Never touch `app/api/**`, `lib/analyze.js`, `lib/types.ts`, `lib/overlap.js`, `lib/graderConsistency.js`, `lib/grade.js`, `lib/supabase/serverClient.js`, `supabase/**`, `fixtures/**`.
+- File ownership — you touch **only**: `app/page.js` (root redirect, replacing the scaffold default — coordinate with Arko: he ships the stock scaffold in his Task 1 and never edits `app/page.js` again), `app/(app)/**`, `components/**`. Never touch `app/api/**`, `app/(auth)/**` (Arko's login/signup), `lib/analyze.js`, `lib/types.ts`, `lib/overlap.js`, `lib/graderConsistency.js`, `lib/grade.js`, `lib/supabase/client.js`, `lib/supabase/server.js`, `src/middleware.js`, `supabase/**`, `fixtures/**`.
 - No shared `lib/types.ts` import — keep your own local copy of the response shapes in `components/mockResponses.js` (duplication is intentional, per `plan.md`).
-- Anonymous auth: call `supabase.auth.signInAnonymously()` once on load (browser client, `@supabase/supabase-js`, needs `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` — ask Arko for the values once his Task 1 lands, or use placeholder `.env.local` values until then since Tasks 1-8 run entirely on mocks). Attach the resulting `access_token` as `Authorization: Bearer` on calls to `/api/analyze` and `/api/runs` only — the other three routes need no auth header per the Frozen Contract.
+- Auth is not your concern at all (reversed 2026-09-06 — was anonymous auth requiring a client-side `signInAnonymously()` call and manual `Bearer` header; now real auth, entirely Arko's `middleware.js` + login/signup pages). `src/app/(app)/**` only renders for a signed-in visitor in the first place — `middleware.js` redirects anyone else to `/login` before your code runs. Plain `fetch('/api/analyze', ...)` and `fetch('/api/runs')` send the session cookie automatically since it's same-origin — no auth header, no token, no Supabase client import needed in your files.
 - Density: input areas use 24px gaps; the report view underneath switches to dense mode (`--grid-gap: 8px`, `--card-padding: 12px`, `--font-size-small: 12px`, `--table-row-height: 36px`) per `DESIGN.md`.
 - Colors, typography, and motion exactly per `DESIGN.md`'s tokens — no invented palette, no extra animation.
 - No state management library, no premature abstraction — `useState`/`useEffect` is enough for 4 screens.
@@ -522,7 +522,7 @@ export default function ExamQualityPage() {
 
   async function handleAnalyze() {
     setLoading(true);
-    // TODO(Task 9): replace with a real POST /api/analyze call using the anonymous session's access token.
+    // TODO(Task 9): replace with a real POST /api/analyze call (plain fetch — session cookie sent automatically).
     await new Promise((r) => setTimeout(r, 300));
     setReport(analyzeResponse);
     setLoading(false);
@@ -641,7 +641,7 @@ Add state and an effect inside `ExamQualityPage`:
 const [runs, setRuns] = useState([]);
 
 useEffect(() => {
-  // TODO(Task 9): replace with a real GET /api/runs call using the anonymous session's access token.
+  // TODO(Task 9): replace with a real GET /api/runs call (plain fetch — session cookie sent automatically).
   setRuns(runsResponse.runs);
 }, []);
 ```
@@ -1084,50 +1084,20 @@ git commit -m "feat: add AI-Anchored Grading screen wired to mock response"
 - Modify: `app/(app)/exam-quality/page.js`, `app/(app)/syllabus-overlap/page.js`, `app/(app)/grader-consistency/page.js`, `app/(app)/ai-grading/page.js`
 
 **Interfaces:**
-- Consumes: Arko's deployed `/api/analyze` + `/api/runs` (Bearer auth) and Hrittika's deployed `/api/overlap`, `/api/grader-consistency`, `/api/grade` (no auth) — the exact request/response shapes are unchanged from what the mocks already model, so each swap is a one-line `fetch` replacement per `handle*` function, not a rewrite.
+- Consumes: Arko's deployed `/api/analyze` + `/api/runs` (real session, cookie-based — no header needed on your end) and Hrittika's deployed `/api/overlap`, `/api/grader-consistency`, `/api/grade` (no auth) — the exact request/response shapes are unchanged from what the mocks already model, so each swap is a one-line `fetch` replacement per `handle*` function, not a rewrite.
 
-- [ ] **Step 1: Add the anonymous-auth helper**
+> **Reversed 2026-09-06:** this task originally had you add a `components/supabaseClient.js` anonymous-auth helper and attach `Authorization: Bearer <token>` to the analyze/runs calls. Real auth removed that entirely — `src/app/(app)/**` only ever renders for an already-signed-in visitor (Arko's `middleware.js` redirects anyone else to `/login` first), and same-origin `fetch` sends the session cookie automatically. Step 1 below is just the plain-fetch swap, same shape as Step 2's secondary-route swap.
 
-Create `components/supabaseClient.js`:
-```js
-import { createClient } from '@supabase/supabase-js';
-
-let cachedClient = null;
-let cachedSession = null;
-
-export function getSupabase() {
-  if (!cachedClient) {
-    cachedClient = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-  }
-  return cachedClient;
-}
-
-export async function getAccessToken() {
-  const supabase = getSupabase();
-  if (!cachedSession) {
-    const { data, error } = await supabase.auth.signInAnonymously();
-    if (error) throw new Error(`signInAnonymously failed: ${error.message}`);
-    cachedSession = data.session;
-  }
-  return cachedSession.access_token;
-}
-```
-
-```bash
-npm install @supabase/supabase-js
-```
-
-- [ ] **Step 2: Swap Exam Quality's Analyze and History calls**
+- [ ] **Step 1: Swap Exam Quality's Analyze and History calls**
 
 In `app/(app)/exam-quality/page.js`, replace the mock body of `handleAnalyze`:
 ```jsx
 async function handleAnalyze() {
   setLoading(true);
   try {
-    const token = await getAccessToken();
     const res = await fetch('/api/analyze', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ clos, exam, pastExams }),
     });
     const data = await res.json();
@@ -1142,16 +1112,15 @@ And the History effect:
 ```jsx
 useEffect(() => {
   (async () => {
-    const token = await getAccessToken();
-    const res = await fetch('/api/runs', { headers: { authorization: `Bearer ${token}` } });
+    const res = await fetch('/api/runs');
     const data = await res.json();
     if (res.ok) setRuns(data.runs);
   })();
 }, []);
 ```
-Add the import: `import { getAccessToken } from '../../../components/supabaseClient';` and remove the now-unused `runsResponse`/`analyzeResponse` mock imports.
+Remove the now-unused `runsResponse`/`analyzeResponse` mock imports.
 
-- [ ] **Step 3: Swap the 3 secondary screens' calls**
+- [ ] **Step 2: Swap the 3 secondary screens' calls**
 
 In each of `syllabus-overlap/page.js`, `grader-consistency/page.js`, `ai-grading/page.js`, replace the mock body of the respective `handle*` function with a plain `fetch` (no auth header):
 ```jsx
@@ -1166,17 +1135,17 @@ setResult(data);
 ```
 (and the analogous 3-line swap for `/api/grader-consistency` with `{rubric, studentAnswers, graderScores}`, and `/api/grade` with `{rubric, modelAnswer, studentAnswers, humanScores}`). Remove the now-unused mock imports in each file.
 
-- [ ] **Step 4: Manual verification against the deployed backend**
+- [ ] **Step 3: Manual verification against the deployed backend**
 
 Once Arko's and Hrittika's routes are live on the same Vercel deployment:
 ```bash
 npm run dev
 ```
-Open each of the 4 screens, submit real pasted text, confirm each returns real model output (not the mock's fixed values) and renders correctly. Re-run the wow-moment demo data from Arko's plan on `/exam-quality` and confirm CLO4 blank + Q2 ≥80% match still render with the real backend.
+Log in (or sign up) at `/login` first — the app pages redirect there otherwise. Then open each of the 4 screens, submit real pasted text, confirm each returns real model output (not the mock's fixed values) and renders correctly. Re-run the wow-moment demo data from Arko's plan on `/exam-quality` and confirm CLO4 blank + Q2 ≥80% match still render with the real backend.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add components/supabaseClient.js package.json package-lock.json "app/(app)"
+git add "app/(app)"
 git commit -m "feat: swap mock responses for real API calls across all 4 screens"
 ```
