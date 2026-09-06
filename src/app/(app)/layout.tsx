@@ -12,7 +12,7 @@ const TABS = [
   { href: '/history', label: 'History' },
 ];
 
-export default function AppLayout({ children }) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   return (
     <div className="min-h-[100dvh]">
