@@ -1,0 +1,5 @@
+{
+  "clos": "CLO1: Explain Big-O time complexity\nCLO2: Implement recursive algorithms\nCLO3: Analyze sorting algorithm tradeoffs\nCLO4: Design a hash table from scratch",
+  "exam": "1. What is the time complexity of binary search, and why?\n2. Write a recursive function to compute the nth Fibonacci number.\n3. Compare the average-case and worst-case time complexity of quicksort vs mergesort.",
+  "pastExams": "2024\n1. Write a recursive function that returns the nth Fibonacci number using memoization.\n2. What is the time complexity of binary search?\n\n2023\n1. Implement mergesort and state its worst-case time complexity."
+}
