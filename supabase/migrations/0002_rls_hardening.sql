@@ -1,12 +1,19 @@
-create table if not exists analysis_runs (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  created_at timestamptz not null default now(),
-  clos_text text not null,
-  exam_text text not null,
-  past_exams_text text not null default '',
-  result jsonb not null
-);
+-- Idempotent hardening for projects that already applied 0001_init.
+-- Wraps auth.uid() in a subquery (initplan), scopes policies to authenticated,
+-- and grants Data API access without exposing the table to anon.
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'analysis_runs_user_id_fkey'
+  ) then
+    alter table analysis_runs
+      add constraint analysis_runs_user_id_fkey
+      foreign key (user_id) references auth.users (id) on delete cascade;
+  end if;
+end $$;
 
 create index if not exists analysis_runs_user_created_at_idx
   on analysis_runs (user_id, created_at desc);
