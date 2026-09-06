@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { test } = require('node:test');
 const assert = require('node:assert');
 const { parseApiKeys, isRateLimited, callGeminiWithRotation } = require('../lib/gemini');

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faculty OS — Design Direction Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&family=Archivo+Black&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #101014; color: #e8e8ee; font-family: 'Inter', system-ui, sans-serif; }
+  .page-head { max-width: 1160px; margin: 0 auto; padding: 56px 24px 8px; }
+  .page-head h1 { font-family: 'Space Grotesk'; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+  .page-head p { color: #9a9aa8; font-size: 14px; margin-top: 8px; max-width: 640px; line-height: 1.6; }
+  .sample { max-width: 1160px; margin: 48px auto 0; padding: 0 24px; }
+  .sample-meta { display: flex; align-items: baseline; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .sample-meta .num { font-family: 'JetBrains Mono'; font-size: 12px; color: #6a6a78; }
+  .sample-meta .name { font-family: 'Space Grotesk'; font-size: 20px; font-weight: 700; color: #fff; }
+  .sample-meta .desc { font-size: 13px; color: #9a9aa8; }
+  .swatches { display: inline-flex; gap: 4px; vertical-align: middle; }
+  .swatches i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; border: 1px solid rgba(255,255,255,.15); }
+  .frame { border-radius: 16px; overflow: hidden; border: 1px solid #23232c; }
+  table { border-collapse: collapse; }
+  /* every sample renders the same content: nav / title / two wow cards / tags */
+
+  /* ============ 1. LIQUID GLASS (Apple) ============ */
+  .s1 { padding: 0; }
+  .s1 .stage {
+    position: relative; min-height: 660px; padding: 28px 36px 40px;
+    background: #0b1026;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  }
+  .s1 .blob { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .55; animation: s1drift 14s ease-in-out infinite alternate; }
+  .s1 .b1 { width: 480px; height: 480px; background: radial-gradient(circle, #14b8a6, transparent 70%); top: -140px; left: -80px; }
+  .s1 .b2 { width: 420px; height: 420px; background: radial-gradient(circle, #f97316, transparent 70%); top: 30%; right: -120px; animation-delay: -5s; }
+  .s1 .b3 { width: 380px; height: 380px; background: radial-gradient(circle, #a855f7, transparent 70%); bottom: -160px; left: 30%; animation-delay: -9s; }
+  @keyframes s1drift { from { transform: translate(0,0) scale(1); } to { transform: translate(40px,-30px) scale(1.12); } }
+  @media (prefers-reduced-motion: reduce) { .s1 .blob { animation: none; } }
+  .s1 .glass {
+    background: rgba(255,255,255,0.09);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 24px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -1px 0 rgba(255,255,255,0.05), 0 16px 48px rgba(4,8,30,0.45);
+  }
+  .s1 .nav { position: relative; z-index: 2; display: inline-flex; gap: 4px; padding: 6px; }
+  .s1 .nav a { color: rgba(255,255,255,0.72); text-decoration: none; font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 16px; transition: background .2s; cursor: pointer; }
+  .s1 .nav a.on { background: rgba(255,255,255,0.22); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35); }
+  .s1 h2 { position: relative; z-index: 2; color: #fff; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 26px 0 4px; }
+  .s1 .sub { position: relative; z-index: 2; color: rgba(255,255,255,0.6); font-size: 13.5px; margin-bottom: 22px; }
+  .s1 .cols { position: relative; z-index: 2; display: grid; grid-template-columns: 1.25fr 1fr; gap: 18px; }
+  .s1 .card { padding: 20px 22px; }
+  .s1 .card h3 { color: #fff; font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; }
+  .s1 .card h3 .pill { font-size: 11px; font-weight: 700; color: #ffb4a0; background: rgba(249,115,22,0.25); border: 1px solid rgba(249,115,22,0.4); padding: 2px 10px; border-radius: 999px; }
+  .s1 table { width: 100%; font-size: 12.5px; }
+  .s1 th { color: rgba(255,255,255,0.5); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 8px; text-align: center; }
+  .s1 th:first-child { text-align: left; }
+  .s1 td { padding: 8px; text-align: center; color: rgba(255,255,255,0.85); border-top: 1px solid rgba(255,255,255,0.08); }
+  .s1 td.rowlab { text-align: left; font-weight: 600; color: rgba(255,255,255,0.85); }
+  .s1 .hit { background: rgba(20,184,166,0.28); border-radius: 8px; color: #7ff3e4; font-weight: 700; }
+  .s1 tr.blank td { background: rgba(239,68,68,0.14); }
+  .s1 tr.blank td.rowlab, .s1 tr.blank td:first-child { color: #ff8f8f; border-radius: 8px 0 0 8px; }
+  .s1 .blanknote { color: #ff8f8f; font-weight: 500; font-size: 11.5px; }
+  .s1 .recycled { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 11px 0; border-top: 1px solid rgba(255,255,255,0.08); font-size: 13px; color: rgba(255,255,255,0.85); }
+  .s1 .match { flex-shrink: 0; font-weight: 700; font-size: 12px; color: #fff; background: linear-gradient(135deg, rgba(239,68,68,.7), rgba(249,115,22,.7)); padding: 5px 12px; border-radius: 999px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35); }
+  .s1 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .s1 .chip { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.14); padding: 4px 12px; border-radius: 999px; }
+  .s1 .cta { position: relative; z-index: 2; margin-top: 20px; display: inline-flex; align-items: center; gap: 8px; padding: 13px 30px; border-radius: 999px; border: none; cursor: pointer; font-size: 14px; font-weight: 700; color: #04211d; background: linear-gradient(135deg, #2dd4bf, #14b8a6 60%, #0d9488); box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 8px 28px rgba(20,184,166,0.4); font-family: inherit; }
+
+  /* ============ 2. SWISS EDITORIAL (current DESIGN.md direction) ============ */
+  .s2 .stage { background: #F0FDFA; color: #134E4A; padding: 30px 36px 40px; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .s2 .nav { display: flex; gap: 2px; background: #fff; border: 1px solid #99F6E4; border-radius: 10px; padding: 4px; width: fit-content; }
+  .s2 .nav a { color: #475569; text-decoration: none; font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 7px; cursor: pointer; }
+  .s2 .nav a.on { background: #0D9488; color: #fff; }
+  .s2 h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin: 26px 0 4px; }
+  .s2 .sub { color: #475569; font-size: 13.5px; margin-bottom: 22px; }
+  .s2 .cols { display: grid; grid-template-columns: 1.25fr 1fr; gap: 12px; }
+  .s2 .card { background: #fff; border: 1px solid #99F6E4; border-radius: 8px; padding: 14px 16px; }
+  .s2 .card h3 { font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between; }
+  .s2 .card h3 .pill { font-size: 11px; font-weight: 700; color: #DC2626; background: #FEF2F2; padding: 2px 10px; border-radius: 999px; }
+  .s2 table { width: 100%; font-size: 12px; }
+  .s2 th { color: #475569; font-weight: 700; font-size: 11px; padding: 7px 8px; text-align: center; border-bottom: 1px solid #99F6E4; }
+  .s2 th:first-child { text-align: left; }
+  .s2 td { padding: 7px 8px; text-align: center; height: 36px; border-bottom: 1px solid #E8F1F4; }
+  .s2 td.rowlab { text-align: left; font-weight: 600; }
+  .s2 .hit { background: #DCFCE7; color: #166534; font-weight: 700; }
+  .s2 tr.blank td { background: #FEF2F2; }
+  .s2 tr.blank td.rowlab, .s2 tr.blank td:first-child { color: #DC2626; }
+  .s2 .blanknote { font-size: 11px; font-weight: 600; }
+  .s2 .recycled { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid #E8F1F4; font-size: 13px; }
+  .s2 .match { font-weight: 800; font-size: 12px; color: #DC2626; white-space: nowrap; }
+  .s2 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .s2 .chip { font-size: 11px; font-weight: 600; color: #134E4A; background: #E8F1F4; padding: 3px 10px; border-radius: 999px; }
+  .s2 .cta { margin-top: 20px; padding: 12px 26px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 700; color: #000; background: #EA580C; font-family: inherit; }
+
+  /* ============ 3. MIDNIGHT INDIGO (Linear-style) ============ */
+  .s3 .stage { background: linear-gradient(180deg, #0F0F1A, #0c0c14); color: #EAEAF5; padding: 30px 36px 40px; font-family: 'Inter', sans-serif; }
+  .s3 .nav { display: flex; gap: 4px; align-items: center; border-bottom: 1px solid #1E1E30; padding-bottom: 14px; }
+  .s3 .logo { font-family: 'Space Grotesk'; font-weight: 700; font-size: 13px; color: #7C6FFF; margin-right: 14px; letter-spacing: .04em; }
+  .s3 .nav a { color: #9090AA; text-decoration: none; font-size: 13px; font-weight: 500; padding: 7px 12px; border-radius: 7px; cursor: pointer; }
+  .s3 .nav a.on { color: #fff; background: #1E1E32; }
+  .s3 h2 { font-size: 23px; font-weight: 700; letter-spacing: -0.02em; margin: 24px 0 4px; }
+  .s3 .sub { color: #9090AA; font-size: 13.5px; margin-bottom: 22px; }
+  .s3 .cols { display: grid; grid-template-columns: 1.25fr 1fr; gap: 14px; }
+  .s3 .card { background: #15151f; border: 1px solid #23233a; border-radius: 12px; padding: 16px 18px; }
+  .s3 .card h3 { font-size: 13px; font-weight: 600; color: #c9c9dd; margin-bottom: 12px; display: flex; justify-content: space-between; }
+  .s3 .card h3 .pill { font-size: 11px; font-weight: 600; color: #ff7b7b; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); padding: 2px 10px; border-radius: 6px; }
+  .s3 table { width: 100%; font-size: 12.5px; }
+  .s3 th { color: #6b6b85; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 7px 8px; text-align: center; }
+  .s3 th:first-child { text-align: left; }
+  .s3 td { padding: 8px; text-align: center; border-top: 1px solid #1d1d2e; color: #c9c9dd; }
+  .s3 td.rowlab { text-align: left; font-weight: 500; color: #EAEAF5; }
+  .s3 .hit { color: #9d8fff; font-weight: 600; }
+  .s3 tr.blank td { background: rgba(239,68,68,0.08); }
+  .s3 tr.blank td.rowlab, .s3 tr.blank td:first-child { color: #ff7b7b; }
+  .s3 .blanknote { font-size: 11px; color: #ff7b7b; font-weight: 500; }
+  .s3 .recycled { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 11px 0; border-top: 1px solid #1d1d2e; font-size: 13px; color: #c9c9dd; }
+  .s3 .match { font-weight: 600; font-size: 12px; color: #ff7b7b; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); padding: 4px 11px; border-radius: 6px; white-space: nowrap; }
+  .s3 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .s3 .chip { font-size: 11px; font-weight: 500; color: #9090AA; background: #1c1c2c; border: 1px solid #26263e; padding: 3px 10px; border-radius: 6px; }
+  .s3 .cta { margin-top: 20px; padding: 11px 24px; border: none; border-radius: 9px; cursor: pointer; font-size: 14px; font-weight: 600; color: #fff; background: #7C6FFF; box-shadow: 0 0 24px rgba(124,111,255,0.35); font-family: inherit; }
+
+  /* ============ 4. BRUTALIST ACADEMIC ============ */
+  .s4 .stage { background: #FAF8F3; color: #111; padding: 30px 36px 40px; font-family: 'Space Grotesk', sans-serif; }
+  .s4 .nav { display: flex; gap: 0; border: 3px solid #111; width: fit-content; }
+  .s4 .nav a { color: #111; text-decoration: none; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 11px 16px; border-right: 3px solid #111; cursor: pointer; }
+  .s4 .nav a:last-child { border-right: none; }
+  .s4 .nav a.on { background: #111; color: #FAF8F3; }
+  .s4 h2 { font-family: 'Archivo Black', 'Space Grotesk'; font-size: 34px; text-transform: uppercase; letter-spacing: -0.01em; margin: 26px 0 4px; line-height: 1; }
+  .s4 .sub { font-size: 13.5px; margin-bottom: 22px; max-width: 520px; line-height: 1.5; }
+  .s4 .cols { display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; }
+  .s4 .card { border: 3px solid #111; padding: 16px 18px; background: #fff; box-shadow: 6px 6px 0 #111; }
+  .s4 .card h3 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .s4 .card h3 .pill { font-size: 11px; font-weight: 700; color: #fff; background: #E11D1D; padding: 3px 10px; }
+  .s4 table { width: 100%; font-size: 12.5px; }
+  .s4 th { font-weight: 700; font-size: 11px; text-transform: uppercase; padding: 8px; text-align: center; border: 2px solid #111; background: #FAF8F3; }
+  .s4 th:first-child { text-align: left; }
+  .s4 td { padding: 8px; text-align: center; border: 2px solid #111; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .s4 td.rowlab { text-align: left; font-family: 'Space Grotesk'; font-weight: 700; }
+  .s4 .hit { background: #86EFAC; font-weight: 700; }
+  .s4 tr.blank td { background: #FECACA; }
+  .s4 tr.blank td.rowlab, .s4 tr.blank td:first-child { color: #E11D1D; }
+  .s4 .blanknote { font-size: 11px; font-weight: 700; }
+  .s4 .recycled { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 11px 0; border-bottom: 2px solid #111; font-size: 13px; font-weight: 500; }
+  .s4 .recycled:first-of-type { border-top: 2px solid #111; }
+  .s4 .match { font-family: 'JetBrains Mono'; font-weight: 700; font-size: 12px; color: #E11D1D; white-space: nowrap; }
+  .s4 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .s4 .chip { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; border: 2px solid #111; padding: 3px 10px; background: #FAF8F3; }
+  .s4 .cta { margin-top: 24px; padding: 13px 30px; border: 3px solid #111; cursor: pointer; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #111; background: #FFD23F; box-shadow: 5px 5px 0 #111; font-family: inherit; }
+  .s4 .cta:active { transform: translate(3px,3px); box-shadow: 2px 2px 0 #111; }
+
+  /* ============ 5. SOFT BENTO ============ */
+  .s5 .stage { background: #FBF7F0; color: #3d3a34; padding: 30px 36px 40px; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .s5 .nav { display: flex; gap: 6px; background: #fff; border-radius: 999px; padding: 5px; width: fit-content; box-shadow: 0 2px 12px rgba(61,58,52,0.08); }
+  .s5 .nav a { color: #8a8578; text-decoration: none; font-size: 13px; font-weight: 600; padding: 9px 16px; border-radius: 999px; cursor: pointer; }
+  .s5 .nav a.on { background: #F2A65A; color: #fff; }
+  .s5 h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin: 26px 0 4px; color: #2e2b26; }
+  .s5 .sub { color: #8a8578; font-size: 13.5px; margin-bottom: 22px; }
+  .s5 .cols { display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; }
+  .s5 .card { background: #fff; border-radius: 20px; padding: 20px 22px; box-shadow: 0 4px 20px rgba(61,58,52,0.07); }
+  .s5 .card h3 { font-size: 14px; font-weight: 700; color: #2e2b26; margin-bottom: 12px; display: flex; justify-content: space-between; }
+  .s5 .card h3 .pill { font-size: 11px; font-weight: 700; color: #D64545; background: #FBE4E4; padding: 3px 12px; border-radius: 999px; }
+  .s5 table { width: 100%; font-size: 12.5px; }
+  .s5 th { color: #8a8578; font-weight: 600; font-size: 11px; padding: 8px; text-align: center; }
+  .s5 th:first-child { text-align: left; }
+  .s5 td { padding: 8px; text-align: center; }
+  .s5 td.rowlab { text-align: left; font-weight: 600; color: #2e2b26; }
+  .s5 .hit { background: #DDF3E4; color: #2F7D53; font-weight: 700; border-radius: 8px; }
+  .s5 tr.blank td { background: #FBE4E4; }
+  .s5 tr.blank td:first-child, .s5 tr.blank td.rowlab { color: #D64545; border-radius: 10px 0 0 10px; }
+  .s5 .blanknote { font-size: 11px; font-weight: 700; }
+  .s5 .recycled { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 11px 0; border-bottom: 1px solid #f0ece3; font-size: 13px; }
+  .s5 .match { font-weight: 700; font-size: 12px; color: #D64545; background: #FBE4E4; padding: 5px 12px; border-radius: 999px; white-space: nowrap; }
+  .s5 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .s5 .chip { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 999px; }
+  .s5 .c1 { background: #E8EEF9; color: #4A6FA5; } .s5 .c2 { background: #F2E6F9; color: #8B5CA8; } .s5 .c3 { background: #DDF3E4; color: #2F7D53; }
+  .s5 .cta { margin-top: 22px; padding: 13px 28px; border: none; border-radius: 999px; cursor: pointer; font-size: 14px; font-weight: 700; color: #fff; background: #F2A65A; box-shadow: 0 6px 18px rgba(242,166,90,0.4); font-family: inherit; }
+
+  /* ============ 6. OPS CONSOLE (terminal) ============ */
+  .s6 .stage { background: #060807; color: #c8d5c8; padding: 30px 36px 40px; font-family: 'JetBrains Mono', monospace; }
+  .s6 .nav { display: flex; gap: 0; border: 1px solid #1e2a20; width: fit-content; background: #0a0f0b; }
+  .s6 .nav a { color: #5f7a63; text-decoration: none; font-size: 12px; font-weight: 500; padding: 10px 14px; border-right: 1px solid #1e2a20; cursor: pointer; }
+  .s6 .nav a:last-child { border-right: none; }
+  .s6 .nav a.on { background: #12281a; color: #4ADE80; }
+  .s6 h2 { font-size: 19px; font-weight: 600; margin: 26px 0 6px; color: #e6f2e6; }
+  .s6 h2::before { content: '> '; color: #4ADE80; }
+  .s6 .sub { color: #5f7a63; font-size: 12px; margin-bottom: 24px; }
+  .s6 .cols { display: grid; grid-template-columns: 1.25fr 1fr; gap: 14px; }
+  .s6 .card { border: 1px solid #1e2a20; background: #0a0f0b; padding: 16px 18px; }
+  .s6 .card h3 { font-size: 11.5px; font-weight: 600; color: #4ADE80; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; display: flex; justify-content: space-between; }
+  .s6 .card h3 .pill { color: #F87171; background: #2a1215; border: 1px solid #7f1d1d; padding: 1px 8px; font-size: 10.5px; }
+  .s6 table { width: 100%; font-size: 12px; }
+  .s6 th { color: #5f7a63; font-weight: 500; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; padding: 7px 8px; text-align: center; border-bottom: 1px solid #1e2a20; }
+  .s6 th:first-child { text-align: left; }
+  .s6 td { padding: 8px; text-align: center; color: #a8bda8; border-bottom: 1px solid #101a12; }
+  .s6 td.rowlab { text-align: left; color: #c8d5c8; }
+  .s6 .hit { color: #4ADE80; background: rgba(74,222,128,0.08); font-weight: 700; }
+  .s6 tr.blank td { background: rgba(248,113,113,0.09); color: #F87171; }
+  .s6 tr.blank td.rowlab, .s6 tr.blank td:first-child { color: #F87171; }
+  .s6 .blanknote { font-size: 11px; }
+  .s6 .recycled { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid #101a12; font-size: 12px; color: #a8bda8; }
+  .s6 .match { font-weight: 700; font-size: 11.5px; color: #F87171; background: #2a1215; padding: 3px 10px; white-space: nowrap; }
+  .s6 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .s6 .chip { font-size: 10.5px; color: #4ADE80; border: 1px solid #1e3a26; padding: 2px 9px; background: #0d1a10; }
+  .s6 .chip.alt { color: #FBBF24; border-color: #3a2e10; background: #191405; }
+  .s6 .cta { margin-top: 22px; padding: 12px 26px; border: 1px solid #4ADE80; background: transparent; cursor: pointer; font-size: 13px; font-weight: 600; color: #4ADE80; font-family: inherit; }
+  .s6 .cta:hover { background: rgba(74,222,128,0.08); }
+
+  .page-foot { max-width: 1160px; margin: 56px auto 64px; padding: 0 24px; color: #6a6a78; font-size: 13px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>Faculty OS — pick a direction</h1>
+  <p>Same screen, six worlds. Every sample renders the wow-moment: the CLO Coverage Matrix with a blank (never-tested) CLO row, the Recycled Questions list with the 92% badge, and per-question topic/Bloom tags. Pick the number, not the pixels — the winner gets built properly.</p>
+</div>
+
+<!-- 1 — LIQUID GLASS -->
+<section class="sample">
+  <div class="sample-meta">
+    <span class="num">01</span><span class="name">Liquid Glass</span>
+    <span class="desc">Apple visionOS / iOS 26 — frosted translucent panels over living color, specular edges, floating capsule nav</span>
+    <span class="swatches"><i style="background:#0b1026"></i><i style="background:#2dd4bf"></i><i style="background:#f97316"></i><i style="background:#a855f7"></i><i style="background:#ffffff"></i></span>
+  </div>
+  <div class="frame s1"><div class="stage">
+    <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+    <nav class="nav glass">
+      <a class="on">Exam Quality</a><a>Syllabus Overlap</a><a>Grader Consistency</a><a>AI Grading</a>
+    </nav>
+    <h2>Exam Quality</h2>
+    <p class="sub">Paste your outcomes, this year's draft, and past exams — the audit paints itself.</p>
+    <div class="cols">
+      <div class="card glass">
+        <h3>CLO Coverage Matrix <span class="pill">1 untested</span></h3>
+        <table>
+          <thead><tr><th>CLO</th><th>Q1</th><th>Q2</th><th>Q3</th></tr></thead>
+          <tbody>
+            <tr><td class="rowlab">CLO1 · Big-O</td><td class="hit">✓</td><td></td><td></td></tr>
+            <tr><td class="rowlab">CLO2 · Recursion</td><td></td><td class="hit">✓</td><td></td></tr>
+            <tr><td class="rowlab">CLO3 · Sorting</td><td></td><td></td><td class="hit">✓</td></tr>
+            <tr class="blank"><td class="rowlab">CLO4 · Hash tables <span class="blanknote">— never tested</span></td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card glass">
+        <h3>Recycled Questions <span class="pill">2 flags</span></h3>
+        <div class="recycled"><span>Q2 · Fibonacci by recursion</span><span class="match">92% → 2024 Q1</span></div>
+        <div class="recycled"><span>Q1 · Binary search complexity</span><span class="match">67% → 2023 Q4</span></div>
+        <h3 style="margin-top:16px">Per-Question Tags</h3>
+        <div class="chips">
+          <span class="chip">Q1 · Binary search</span><span class="chip">Understand</span>
+          <span class="chip">Q2 · Recursion</span><span class="chip">Apply</span>
+          <span class="chip">Q3 · Sorting</span><span class="chip">Analyze</span>
+        </div>
+      </div>
+    </div>
+    <button class="cta">Analyze</button>
+  </div></div>
+</section>
+
+<!-- 2 — SWISS EDITORIAL -->
+<section class="sample">
+  <div class="sample-meta">
+    <span class="num">02</span><span class="name">Swiss Editorial</span>
+    <span class="desc">The current DESIGN.md direction — light teal, Plus Jakarta Sans, dense data grid, calm and trustworthy</span>
+    <span class="swatches"><i style="background:#F0FDFA"></i><i style="background:#0D9488"></i><i style="background:#EA580C"></i><i style="background:#DC2626"></i><i style="background:#134E4A"></i></span>
+  </div>
+  <div class="frame s2"><div class="stage">
+    <nav class="nav">
+      <a class="on">Exam Quality</a><a>Syllabus Overlap</a><a>Grader Consistency</a><a>AI Grading</a>
+    </nav>
+    <h2>Exam Quality</h2>
+    <p class="sub">Paste your outcomes, this year's draft, and past exams — the audit paints itself.</p>
+    <div class="cols">
+      <div class="card">
+        <h3>CLO Coverage Matrix <span class="pill">1 untested</span></h3>
+        <table>
+          <thead><tr><th>CLO</th><th>Q1</th><th>Q2</th><th>Q3</th></tr></thead>
+          <tbody>
+            <tr><td class="rowlab">CLO1 · Big-O</td><td class="hit">✓</td><td></td><td></td></tr>
+            <tr><td class="rowlab">CLO2 · Recursion</td><td></td><td class="hit">✓</td><td></td></tr>
+            <tr><td class="rowlab">CLO3 · Sorting</td><td></td><td></td><td class="hit">✓</td></tr>
+            <tr class="blank"><td class="rowlab">CLO4 · Hash tables <span class="blanknote">— never tested</span></td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Recycled Questions <span class="pill">2 flags</span></h3>
+        <div class="recycled"><span>Q2 · Fibonacci by recursion</span><span class="match">92% → 2024 Q1</span></div>
+        <div class="recycled"><span>Q1 · Binary search complexity</span><span class="match">67% → 2023 Q4</span></div>
+        <h3 style="margin-top:16px">Per-Question Tags</h3>
+        <div class="chips">
+          <span class="chip">Q1 · Binary search</span><span class="chip">Understand</span>
+          <span class="chip">Q2 · Recursion</span><span class="chip">Apply</span>
+          <span class="chip">Q3 · Sorting</span><span class="chip">Analyze</span>
+        </div>
+      </div>
+    </div>
+    <button class="cta">Analyze</button>
+  </div></div>
+</section>
+
+<!-- 3 — MIDNIGHT INDIGO -->
+<section class="sample">
+  <div class="sample-meta">
+    <span class="num">03</span><span class="name">Midnight Indigo</span>
+    <span class="desc">Linear / Raycast school — near-black surfaces, hairline borders, violet glow CTA, quiet premium</span>
+    <span class="swatches"><i style="background:#0F0F1A"></i><i style="background:#15151f"></i><i style="background:#7C6FFF"></i><i style="background:#EAEAF5"></i><i style="background:#9090AA"></i></span>
+  </div>
+  <div class="frame s3"><div class="stage">
+    <nav class="nav">
+      <span class="logo">FOS</span>
+      <a class="on">Exam Quality</a><a>Syllabus Overlap</a><a>Grader Consistency</a><a>AI Grading</a>
+    </nav>
+    <h2>Exam Quality</h2>
+    <p class="sub">Paste your outcomes, this year's draft, and past exams — the audit paints itself.</p>
+    <div class="cols">
+      <div class="card">
+        <h3>CLO Coverage Matrix <span class="pill">1 untested</span></h3>
+        <table>
+          <thead><tr><th>CLO</th><th>Q1</th><th>Q2</th><th>Q3</th></tr></thead>
+          <tbody>
+            <tr><td class="rowlab">CLO1 · Big-O</td><td class="hit">✓</td><td></td><td></td></tr>
+            <tr><td class="rowlab">CLO2 · Recursion</td><td></td><td class="hit">✓</td><td></td></tr>
+            <tr><td class="rowlab">CLO3 · Sorting</td><td></td><td></td><td class="hit">✓</td></tr>
+            <tr class="blank"><td class="rowlab">CLO4 · Hash tables <span class="blanknote">— never tested</span></td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Recycled Questions <span class="pill">2 flags</span></h3>
+        <div class="recycled"><span>Q2 · Fibonacci by recursion</span><span class="match">92% → 2024 Q1</span></div>
+        <div class="recycled"><span>Q1 · Binary search complexity</span><span class="match">67% → 2023 Q4</span></div>
+        <h3 style="margin-top:16px">Per-Question Tags</h3>
+        <div class="chips">
+          <span class="chip">Q1 · Binary search</span><span class="chip">Understand</span>
+          <span class="chip">Q2 · Recursion</span><span class="chip">Apply</span>
+          <span class="chip">Q3 · Sorting</span><span class="chip">Analyze</span>
+        </div>
+      </div>
+    </div>
+    <button class="cta">Analyze</button>
+  </div></div>
+</section>
+
+<!-- 4 — BRUTALIST ACADEMIC -->
+<section class="sample">
+  <div class="sample-meta">
+    <span class="num">04</span><span class="name">Brutalist Academic</span>
+    <span class="desc">Paper, ink, hard borders, offset shadows — a graded exam sheet that grew a UI. Max screenshot contrast</span>
+    <span class="swatches"><i style="background:#FAF8F3"></i><i style="background:#111111"></i><i style="background:#E11D1D"></i><i style="background:#FFD23F"></i><i style="background:#86EFAC"></i></span>
+  </div>
+  <div class="frame s4"><div class="stage">
+    <nav class="nav">
+      <a class="on">Exam Quality</a><a>Syllabus Overlap</a><a>Grader Consistency</a><a>AI Grading</a>
+    </nav>
+    <h2>Exam Quality</h2>
+    <p class="sub">Paste your outcomes, this year's draft, and past exams — the audit paints itself.</p>
+    <div class="cols">
+      <div class="card">
+        <h3>CLO Coverage Matrix <span class="pill">1 untested</span></h3>
+        <table>
+          <thead><tr><th>CLO</th><th>Q1</th><th>Q2</th><th>Q3</th></tr></thead>
+          <tbody>
+            <tr><td class="rowlab">CLO1 · Big-O</td><td class="hit">✓</td><td></td><td></td></tr>
+            <tr><td class="rowlab">CLO2 · Recursion</td><td></td><td class="hit">✓</td><td></td></tr>
+            <tr><td class="rowlab">CLO3 · Sorting</td><td></td><td></td><td class="hit">✓</td></tr>
+            <tr class="blank"><td class="rowlab">CLO4 · Hash tables <span class="blanknote">— never tested</span></td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Recycled Questions <span class="pill">2 flags</span></h3>
+        <div class="recycled"><span>Q2 · Fibonacci by recursion</span><span class="match">92% → 2024 Q1</span></div>
+        <div class="recycled"><span>Q1 · Binary search complexity</span><span class="match">67% → 2023 Q4</span></div>
+        <h3 style="margin-top:16px">Per-Question Tags</h3>
+        <div class="chips">
+          <span class="chip">Q1 · Binary search</span><span class="chip">Understand</span>
+          <span class="chip">Q2 · Recursion</span><span class="chip">Apply</span>
+          <span class="chip">Q3 · Sorting</span><span class="chip">Analyze</span>
+        </div>
+      </div>
+    </div>
+    <button class="cta">Analyze</button>
+  </div></div>
+</section>
+
+<!-- 5 — SOFT BENTO -->
+<section class="sample">
+  <div class="sample-meta">
+    <span class="num">05</span><span class="name">Soft Bento</span>
+    <span class="desc">Warm cream, big rounded cards, pastel pills — Notion-meets-Arc friendliness for faculty who fear dashboards</span>
+    <span class="swatches"><i style="background:#FBF7F0"></i><i style="background:#F2A65A"></i><i style="background:#DDF3E4"></i><i style="background:#D64545"></i><i style="background:#2e2b26"></i></span>
+  </div>
+  <div class="frame s5"><div class="stage">
+    <nav class="nav">
+      <a class="on">Exam Quality</a><a>Syllabus Overlap</a><a>Grader Consistency</a><a>AI Grading</a>
+    </nav>
+    <h2>Exam Quality</h2>
+    <p class="sub">Paste your outcomes, this year's draft, and past exams — the audit paints itself.</p>
+    <div class="cols">
+      <div class="card">
+        <h3>CLO Coverage Matrix <span class="pill">1 untested</span></h3>
+        <table>
+          <thead><tr><th>CLO</th><th>Q1</th><th>Q2</th><th>Q3</th></tr></thead>
+          <tbody>
+            <tr><td class="rowlab">CLO1 · Big-O</td><td class="hit">✓</td><td></td><td></td></tr>
+            <tr><td class="rowlab">CLO2 · Recursion</td><td></td><td class="hit">✓</td><td></td></tr>
+            <tr><td class="rowlab">CLO3 · Sorting</td><td></td><td></td><td class="hit">✓</td></tr>
+            <tr class="blank"><td class="rowlab">CLO4 · Hash tables <span class="blanknote">— never tested</span></td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Recycled Questions <span class="pill">2 flags</span></h3>
+        <div class="recycled"><span>Q2 · Fibonacci by recursion</span><span class="match">92% → 2024 Q1</span></div>
+        <div class="recycled"><span>Q1 · Binary search complexity</span><span class="match">67% → 2023 Q4</span></div>
+        <h3 style="margin-top:16px">Per-Question Tags</h3>
+        <div class="chips">
+          <span class="chip c1">Q1 · Binary search</span><span class="chip c2">Understand</span>
+          <span class="chip c1">Q2 · Recursion</span><span class="chip c3">Apply</span>
+          <span class="chip c1">Q3 · Sorting</span><span class="chip c2">Analyze</span>
+        </div>
+      </div>
+    </div>
+    <button class="cta">Analyze</button>
+  </div></div>
+</section>
+
+<!-- 6 — OPS CONSOLE -->
+<section class="sample">
+  <div class="sample-meta">
+    <span class="num">06</span><span class="name">Ops Console</span>
+    <span class="desc">OLED terminal aesthetic — mono type, phosphor green, hairline grids. Reads "this machine audited your exam"</span>
+    <span class="swatches"><i style="background:#060807"></i><i style="background:#4ADE80"></i><i style="background:#F87171"></i><i style="background:#FBBF24"></i><i style="background:#a8bda8"></i></span>
+  </div>
+  <div class="frame s6"><div class="stage">
+    <nav class="nav">
+      <a class="on">exam-quality</a><a>syllabus-overlap</a><a>grader-consistency</a><a>ai-grading</a>
+    </nav>
+    <h2>Exam Quality</h2>
+    <p class="sub">// paste clos, draft exam, past exams — audit runs on submit</p>
+    <div class="cols">
+      <div class="card">
+        <h3>clo_coverage_matrix <span class="pill">1 untested</span></h3>
+        <table>
+          <thead><tr><th>CLO</th><th>Q1</th><th>Q2</th><th>Q3</th></tr></thead>
+          <tbody>
+            <tr><td class="rowlab">CLO1 · Big-O</td><td class="hit">✓</td><td></td><td></td></tr>
+            <tr><td class="rowlab">CLO2 · Recursion</td><td></td><td class="hit">✓</td><td></td></tr>
+            <tr><td class="rowlab">CLO3 · Sorting</td><td></td><td></td><td class="hit">✓</td></tr>
+            <tr class="blank"><td class="rowlab">CLO4 · Hash tables <span class="blanknote">— never tested</span></td><td></td><td></td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>recycled_questions <span class="pill">2 flags</span></h3>
+        <div class="recycled"><span>Q2 · Fibonacci by recursion</span><span class="match">92% → 2024 Q1</span></div>
+        <div class="recycled"><span>Q1 · Binary search complexity</span><span class="match">67% → 2023 Q4</span></div>
+        <h3 style="margin-top:16px">per_question_tags</h3>
+        <div class="chips">
+          <span class="chip">Q1 · Binary search</span><span class="chip alt">Understand</span>
+          <span class="chip">Q2 · Recursion</span><span class="chip alt">Apply</span>
+          <span class="chip">Q3 · Sorting</span><span class="chip alt">Analyze</span>
+        </div>
+      </div>
+    </div>
+    <button class="cta">[ Analyze ]</button>
+  </div></div>
+</section>
+
+<div class="page-foot">
+  <b>What's identical in all six:</b> the Frozen Contract data (coverage matrix, recycled list, tag chips), the wow-moment requirement (blank CLO row + top recycled badge above the fold at 1440×900), and the 4-tab nav for Exam Quality / Syllabus Overlap / Grader Consistency / AI-Anchored Grading. Only the visual world changes. Whichever you pick gets applied consistently across all four screens, with the input screen breathing more than the dense report view.
+</div>
+
+</body>
+</html>

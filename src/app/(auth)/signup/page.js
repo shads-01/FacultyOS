@@ -1,32 +1,41 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getBrowserSupabase } from '../../../../lib/supabase/client';
 
+const inputStyle = {
+  width: '100%',
+  border: '2px solid #111',
+  background: '#fff',
+  padding: '12px 12px',
+  fontSize: 14,
+  fontFamily: 'var(--font-sans)',
+  minHeight: 44,
+};
+
 export default function SignupPage() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError('');
+    setError(null);
     setLoading(true);
     try {
       const supabase = getBrowserSupabase();
-      const { error: authError } = await supabase.auth.signUp({
+      const { data, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: { data: { full_name: name.trim() } },
       });
-      if (authError) {
-        setError(authError.message);
-        setLoading(false);
-        return;
-      }
-      router.push('/');
+      if (authError) throw authError;
+      if (data.user) localStorage.setItem('fz-identity', name.trim() || email.split('@')[0]);
+      router.push('/dashboard');
       router.refresh();
     } catch (err) {
       setError(err?.message || 'An unexpected error occurred');
@@ -35,66 +44,39 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex items-center justify-center bg-[#F0FDFA] px-4 py-12">
-      <div className="w-full max-w-md bg-white border border-[#99F6E4] rounded-xl shadow-sm p-8">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-[#134E4A]">Faculty OS</h1>
-          <p className="text-sm text-[#475569] mt-1">Create your faculty account</p>
+    <div style={{ width: '100%', maxWidth: 420 }}>
+      <h1 className="fz-display" style={{ fontSize: 40, marginBottom: 6 }}>Sign up</h1>
+      <p style={{ color: '#55524a', fontSize: 13.5, marginBottom: 28 }}>
+        One account, every audit — exam quality, syllabus fit, fair grading.
+      </p>
+
+      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 16 }}>
+        <div>
+          <label className="fz-label" htmlFor="fz-name">Your name</label>
+          <input id="fz-name" type="text" style={inputStyle}
+            value={name} onChange={(e) => setName(e.target.value)} placeholder="Dr. Rahman" />
+          <p style={{ fontSize: 11, color: '#55524a', marginTop: 4, fontFamily: 'var(--font-mono)' }}>shown on grader flags and reports</p>
         </div>
-
-        {error && (
-          <div role="alert" className="mb-4 p-3 text-sm text-[#DC2626] bg-red-50 border border-red-200 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#134E4A] mb-1.5" htmlFor="email">
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="faculty@university.edu"
-              className="w-full px-3 py-2 text-sm text-[#134E4A] bg-white border border-[#99F6E4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[#134E4A] mb-1.5" htmlFor="password">
-              Password (6+ characters)
-            </label>
-            <input
-              id="password"
-              type="password"
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-              className="w-full px-3 py-2 text-sm text-[#134E4A] bg-white border border-[#99F6E4] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D9488] focus:border-transparent transition-all"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full cursor-pointer py-2.5 px-4 bg-[#0D9488] hover:bg-[#0F766E] text-white font-medium text-sm rounded-lg shadow-sm transition-all disabled:opacity-50 mt-2"
-          >
-            {loading ? 'Creating account...' : 'Create Account'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-xs text-[#475569]">
-          Already have an account?{' '}
-          <Link href="/login" className="text-[#0D9488] hover:underline font-semibold cursor-pointer">
-            Sign in
-          </Link>
+        <div>
+          <label className="fz-label" htmlFor="fz-email">Email</label>
+          <input id="fz-email" type="email" required autoComplete="email" style={inputStyle}
+            value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@university.edu" />
         </div>
+        <div>
+          <label className="fz-label" htmlFor="fz-password">Password</label>
+          <input id="fz-password" type="password" required minLength={6} autoComplete="new-password" style={inputStyle}
+            value={password} onChange={(e) => setPassword(e.target.value)} placeholder="6+ characters" />
+        </div>
+        {error && <div className="fz-strip" role="alert">{error}</div>}
+        <button type="submit" className="fz-btn" disabled={loading}>
+          {loading ? 'Creating account…' : 'Create account'}
+        </button>
+      </form>
+
+      <div style={{ marginTop: 22 }}>
+        <Link href="/login" style={{ fontSize: 13, color: '#111', fontWeight: 700 }}>
+          Already registered? Log in →
+        </Link>
       </div>
     </div>
   );
